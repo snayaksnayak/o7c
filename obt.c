@@ -505,8 +505,8 @@ void Import(char *modid, char *modid1)
             fread(&(key), sizeof(int), 1, R);
             printf("\nimport_k=%d ", key);
             fread(&(key), sizeof(int), 1, R);
-            printf("import_key=%#x ", key);
-            ReadString(R, modname, ID_LEN); //why ReadInt twice? see Export()
+            printf("import_key=%#x ", key); //why ReadInt twice? see Export()
+            ReadString(R, modname, ID_LEN); 
             printf("import_modname=%s ", modname);
             thismod = ThisModule(modid, modid1, TRUE, key);
             thismod->rdo = TRUE;
@@ -800,52 +800,52 @@ void Export(char* modid, int *newSF, int *key)
     int k=0, t;
     char oldname[ID_LEN], newname[ID_LEN];
 
-    Ref = Record + 1;
-    MakeFileName(filename, modid, ".tsf"); //tsf = temporary symbol file
-    strcpy(newname, filename);
-    R = fopen(newname, "wb");
+    Ref = Record + 1; //ref starts at 14
+    MakeFileName(filename, modid, ".tsf"); //tsf is for temporary symbol file
+    strcpy(newname, filename); //newname = modulename.tsf
+    R = fopen(newname, "wb"); //modulename.tsf created
     if(R == NULL)
     {
         Mark("can't create temp symbol file");
     }
-    fwrite(&(k), sizeof(int), 1, R); //placeholder
+    fwrite(&(k), sizeof(int), 1, R); //placeholder not used now
     printf("export_k=%d ", k);
     fwrite(&(k), sizeof(int), 1, R); //placeholder for key to be inserted at the end
     printf("export_key=%d ", k);
-    WriteString(R, modid);
-    Write(R, versionkey);
+    WriteString(R, modid); //module name with '\0'
+    Write(R, versionkey); //1 byte version info
     printf("export_modid=%s ", modid);
     printf("export_versionkey=%d ", versionkey);
-    obj = topScope->next;
+    obj = topScope->next; //go to first ObjDesc after Head ObjDesc
     while( obj != 0 )
     {
-        if( obj->expo )
+        if( obj->expo ) //if object is exported with a '*' mark
         {
-            Write(R, obj->class);
-            WriteString(R, obj->name);
+            Write(R, obj->class); //class of object, Typ, Var, Const etc.
+            WriteString(R, obj->name); //identifier name
             printf("\nobj_class=%d ", obj->class);
             printf("obj_name=%s ", obj->name);
             OutType(R, obj->type);
-            if( obj->class == Typ )
+            if( obj->class == Typ ) //if it is from TYPE section of code
             {
                 if( obj->type->form == Record )
                 {
-                    obj0 = topScope->next; //check whether this is base of previously declared pointer types
-                    while( obj0 != obj )
+                    obj0 = topScope->next; //start from the begining objects
+                    while( obj0 != obj ) //check previously declared objects
                     {
                         if( (obj0->type->form == Pointer) && (obj0->type->base == obj->type) && (obj0->type->ref > 0)
-                          )
+                          ) //check whether obj is base of previously declared pointer types
                         {
-                            Write(R, obj0->type->ref);
+                            Write(R, obj0->type->ref); //write ref of that pointer type in 1 byte
                             printf("obj_fixref=%d ", obj0->type->ref);
                         }
-                        obj0 = obj0->next;
+                        obj0 = obj0->next; //check if obj is base of another such pointer 
                     }
                 }
-                Write(R, 0);
+                Write(R, 0); //end with a 0
                 printf("0=%d ", 0);
             }
-            else if( obj->class == Const )
+            else if( obj->class == Const ) //if it is from CONST section of code
             {
                 if( obj->type->form == Proc )
                 {
@@ -863,7 +863,7 @@ void Export(char* modid, int *newSF, int *key)
                     printf("obj_intval=%d ", obj->val);
                 }
             }
-            else if( obj->class == Var )
+            else if( obj->class == Var ) //if it is from VAR section of code
             {
                 WriteNum(R, obj->exno);
                 printf("obj_varexno=%d ", obj->exno);
