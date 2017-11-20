@@ -25,30 +25,12 @@ int versionkey = 1;
 //class values
 int Head = 0, Const = 1, Var = 2, Par = 3, Fld = 4, Typ = 5,
     SProc = 6, SFunc = 7, Mod = 8;
-//Object classes and the meaning of "val":
-//    class    val
-//    ----------
-//    Var      address
-//    Par      address
-//    Const    value
-//    Fld      offset
-//    Typ      type descriptor (TypeDesc) address? seems 0 instead
-//    SProc    built-in procedure number
-//    SFunc    built-in function number
-//    Mod      key
 
 //form values
 int Byte = 1, Bool = 2, Char = 3, Int = 4, Real = 5, Set = 6,
     Pointer = 7, NilTyp = 8, NoTyp = 9, Proc = 10,
     String = 11, Array = 12, Record = 13;
-//Type forms and the meaning of "dsc" and "base":
-//    form     dsc      base
-//    ------------------------
-//    Pointer  -        type of dereferenced object
-//    Proc     params   result type
-//    Array    -        type of elements
-//    Record   fields   extension
-//    others   -        0
+
 Object topScope, universe, System;
 Type byteType, boolType, charType, intType, realType, setType, nilType, noType, strType;
 int nofmod, Ref;
@@ -63,8 +45,6 @@ void NEW(void **p, int size)
     }
     memset(*p, 0, size);
 }
-
-
 
 //insert a new Object with name id
 //or else if id already exists, returns it
@@ -106,17 +86,16 @@ Object thisObj()
     do
     {
         x = s->next;
-        while( (x != 0) && (strcmp(x->name, id) != 0) )
+        while( (x != 0) && (strcmp(x->name, id) != 0) ) //loop till object name doesn't match
         {
             x = x->next;
         }
         s = s->dsc;
     }
-    while(!( (x != 0) || (s == 0) ));
+    while( (x == 0) && (s != 0) ); //till this is true, loop
+	                               //that means if object not yet found and higher scope is still available, loop
     return x;
 }
-
-
 
 //if module is not readonly, return 0
 //else return Object of id if found
@@ -170,7 +149,6 @@ void OpenScope()
     topScope = s;
 }
 
-
 //close scope descends, that means we go one level higher up
 void CloseScope()
 {
@@ -202,7 +180,6 @@ void MakeFileName(char *FName, char *name, char *ext)
     while(!( ext[j] == '\0' ));
     FName[i] = '\0';
 }
-
 
 //search the Object of 'name' module
 Object ThisModule(char* name, char *orgname, int non, int key)
@@ -243,9 +220,6 @@ Object ThisModule(char* name, char *orgname, int non, int key)
     }
     return obj;
 }
-
-
-
 
 //read a byte from file
 //if value is < 128, (i.e <= 127) return it
@@ -320,7 +294,7 @@ void ReadString(FILE *R, char *buf, int bufsize)
 {
     int i = 0;
     char c;
-    c = fgetc(R);
+    c = fgetc(R); //reads at least one character!
     while(!feof(R) && c != '\0')
     {
         if(i < bufsize-1)
@@ -332,7 +306,6 @@ void ReadString(FILE *R, char *buf, int bufsize)
     }
     buf[i] = '\0';
 }
-
 
 //recursive procedure!
 void InType(FILE *R, Object thismod, Type *T)
@@ -411,12 +384,12 @@ void InType(FILE *R, Object thismod, Type *T)
                 }
                 ReadNum(R, &(fld->val));
                 printf("fld_val=%d ", fld->val); //offset
-                fld->next = obj;
-                obj = fld;
+                fld->next = obj; //base record's elements follows derived record's elements
+                obj = fld; //this way record extension works!
                 Read(R, &class);
                 printf("fld_class=%d ", class);
             }
-            t->dsc = obj;
+            t->dsc = obj; //first this type's elements are there and after that we have elements of base record connected
         }
         else if( form == Proc )
         {
@@ -443,6 +416,7 @@ void InType(FILE *R, Object thismod, Type *T)
             t->nofpar = np;
             t->size = 4;
         }
+        //why? is this needed? needed for reexported types
         ReadString(R, modname, ID_LEN);
         printf("reexpo_modname=%s ", modname);
         if( modname[0] != 0x0 ) //re-import
@@ -488,27 +462,28 @@ void Import(char *modid, char *modid1)
     char fname[ID_LEN];
     FILE* R;
 
+	//if imported module is SYSTEM, add it
     if( strcmp(modid1, "SYSTEM") == 0 )
     {
-        thismod = ThisModule(modid, modid1, TRUE, key);
+        thismod = ThisModule(modid, modid1, TRUE, key); //create a module ObjDesc
         nofmod--;
         thismod->lev = 0;
-        thismod->dsc = System;
-        thismod->rdo = TRUE;
+        thismod->dsc = System; //module's 'next' points to another module
+        thismod->rdo = TRUE; //module's 'dsc' points to modules's constants, types, variables and procedures
     }
-    else
+    else //else import from modulename.smb file
     {
         MakeFileName(fname, modid1, ".smb");
-        R = fopen(fname, "rb");
+        R = fopen(fname, "rb"); //modulename.smb file opened
         if( R != 0 )
         {
             fread(&(key), sizeof(int), 1, R);
             printf("\nimport_k=%d ", key);
             fread(&(key), sizeof(int), 1, R);
             printf("import_key=%#x ", key); //why ReadInt twice? see Export()
-            ReadString(R, modname, ID_LEN); 
+            ReadString(R, modname, ID_LEN);
             printf("import_modname=%s ", modname);
-            thismod = ThisModule(modid, modid1, TRUE, key);
+            thismod = ThisModule(modid, modid1, TRUE, key); //create a module ObjDesc
             thismod->rdo = TRUE;
             Read(R, &class); //version key
             printf("import_versionkey=%d ", class);
@@ -516,6 +491,7 @@ void Import(char *modid, char *modid1)
             {
                 Mark("wrong version");
             }
+            //start reading {object}
             Read(R, &class);
             printf("\nobj_class=%d ", class);
             while( (!feof(R)) && (class != 0) )
@@ -525,7 +501,7 @@ void Import(char *modid, char *modid1)
                 ReadString(R, obj->name, 32);
                 printf("obj_name=%s ", obj->name);
                 InType(R, thismod, &(obj->type));
-                obj->lev = -(thismod->lev);
+                obj->lev = -(thismod->lev); //all objects are at module's level
                 if( class == Typ )
                 {
                     t = obj->type;
@@ -551,7 +527,7 @@ void Import(char *modid, char *modid1)
                         else
                         {
                             ReadNum(R, &(obj->val));
-                            printf("obj_intval=%d ", obj->val); //why ReadInt vs ReadNum?
+                            printf("obj_intval=%d ", obj->val);
                         }
                     }
                     else if( class == Var )
@@ -576,14 +552,16 @@ void Import(char *modid, char *modid1)
 }
 
 
-
 //------------------------------- Export ------------------------------
 
+
+//write one byte only
 void Write(FILE *R, int x)
 {
     fputc(x, R);
 }
 
+//writes a string with terminating '\0'
 void WriteString(FILE *R, char *buf)
 {
     int i = 0;
@@ -603,7 +581,7 @@ void OutPar( FILE *R, Object par, int n)
     int cl;
     if( n > 0 )
     {
-        OutPar(R, par->next, n-1);
+        OutPar(R, par->next, n-1); //last parameter written first
         cl = par->class;
         Write(R, cl);
         printf("par_class=%d ", cl);
@@ -621,15 +599,16 @@ void OutPar( FILE *R, Object par, int n)
     }
 }
 
+//this is needed for Garbage Collector
 void FindHiddenPointers(FILE *R, Type typ, int offset)
 {
     Object fld;
     int i, n;
-    if( (typ->form == Pointer) || (typ->form == NilTyp) )
+    if( (typ->form == Pointer) || (typ->form == NilTyp) ) //why? why NilTyp?
     {
         Write(R, Fld);
         printf("fld_class=%d ", Fld);
-        Write(R, 0);
+        Write(R, 0); //why? field name not necessary? what about field type?
         printf("fld_name=%d ", 0);
         WriteNum(R, offset);
         printf("fld_offset=%d ", offset);
@@ -659,27 +638,28 @@ void OutType(FILE *R, Type t)
 {
     Object obj, mod, fld;
 
-    if( t->ref > 0 ) //type was already output
-    {
-        Write(R, -(t->ref));
+    if( t->ref > 0 ) //if this type was already output to smb file
+    {   //all primary types comes to this case
+        Write(R, -(t->ref)); //write its negative ref now onwards, for this type references
         printf("type_ref=%d ", -(t->ref));
     }
-    else
-    {
+    else //this type is written to smb file for first time; ref = 0
+    {   //all secondary types such as array, pointer, record and procedure comes to this case
         obj = t->typobj;
         if( obj != 0 )
         {
-            Write(R, Ref);
+            Write(R, Ref); //write next Ref number
             printf("type_Ref=%d ", Ref); //anonymous
-            t->ref = Ref;
-            Ref++;
+            t->ref = Ref; //put this ref number for this type for future reference in this function
+            Ref++; //increment global Ref count
         }
         else
         {
-            Write(R, 0);
+            Write(R, 0); //write 0
             printf("type_Ref=%d ", 0);
         }
-        Write(R, t->form);
+        
+        Write(R, t->form); //form is written for both primary and secondary types
         printf("type_form=%d ", t->form);
         if( t->form == Pointer )
         {
@@ -697,12 +677,13 @@ void OutType(FILE *R, Type t)
         {
             if( t->base != 0 )
             {
-                OutType(R, t->base);
+                OutType(R, t->base); //if extension has been used
             }
             else
             {
-                OutType(R, noType);
+                OutType(R, noType); //why? can't we put 0?
             }
+            
             if( obj != 0 )
             {
                 WriteNum(R, obj->exno);
@@ -713,6 +694,7 @@ void OutType(FILE *R, Type t)
                 Write(R, 0);
                 printf("type_recexno=%d ", 0);
             }
+            
             WriteNum(R, t->nofpar);
             WriteNum(R, t->size);
             printf("type_recnofpar=%d ", t->nofpar);
@@ -727,7 +709,7 @@ void OutType(FILE *R, Type t)
                     printf("fld_class=%d ", Fld);
                     printf("fld_name=%s ", fld->name);
                     OutType(R, fld->type);
-                    WriteNum(R, fld->val);
+                    WriteNum(R, fld->val); //offset
                     printf("fld_val=%#x ", fld->val);
                 }
                 else
@@ -746,6 +728,7 @@ void OutType(FILE *R, Type t)
             Write(R, 0);
             printf("0=%d ", 0);
         }
+        //why? this code needed? needed for reexported types
         if( (t->mno > 0) && (obj != 0) ) //re-export, output name
         {
             mod = topScope->next;
@@ -756,7 +739,7 @@ void OutType(FILE *R, Type t)
             if( mod != 0 )
             {
                 WriteString(R, mod->name);
-                fwrite(&(mod->val), sizeof(int), 1, R); //why? mod->val is module key?
+                fwrite(&(mod->val), sizeof(int), 1, R); //why? because mod->val is module key
                 WriteString(R, obj->name);
                 printf("reexpo_modname=%s ", mod->name);
                 printf("reexpo_modval=%#x ", mod->val);
@@ -831,15 +814,15 @@ void Export(char* modid, int *newSF, int *key)
                 if( obj->type->form == Record )
                 {
                     obj0 = topScope->next; //start from the begining objects
-                    while( obj0 != obj ) //check previously declared objects
+                    while( obj0 != obj ) //check previously declared objects (denoted by obj0)
                     {
                         if( (obj0->type->form == Pointer) && (obj0->type->base == obj->type) && (obj0->type->ref > 0)
-                          ) //check whether obj is base of previously declared pointer types
+                          ) //check whether obj is base of previously declared pointer types (denoted by obj0)
                         {
-                            Write(R, obj0->type->ref); //write ref of that pointer type in 1 byte
+                            Write(R, obj0->type->ref); //{fix} are ref of previous pointers refering to this record
                             printf("obj_fixref=%d ", obj0->type->ref);
                         }
-                        obj0 = obj0->next; //check if obj is base of another such pointer 
+                        obj0 = obj0->next;
                     }
                 }
                 Write(R, 0); //end with a 0
@@ -849,24 +832,25 @@ void Export(char* modid, int *newSF, int *key)
             {
                 if( obj->type->form == Proc )
                 {
-                    WriteNum(R, obj->exno);
+                    WriteNum(R, obj->exno); //export number of procedure
                     printf("obj_procexno=%d ", obj->exno);
                 }
                 else if( obj->type->form == Real )
                 {
-                    fwrite(&(obj->val), sizeof(int), 1, R);
+                    fwrite(&(obj->val), sizeof(int), 1, R); //value of REAL CONST
                     printf("obj_realval=%#x ", obj->val);
                 }
                 else
                 {
-                    WriteNum(R, obj->val);
+                    WriteNum(R, obj->val); //value of INTEGER CONST
                     printf("obj_intval=%d ", obj->val);
                 }
             }
             else if( obj->class == Var ) //if it is from VAR section of code
             {
-                WriteNum(R, obj->exno);
+                WriteNum(R, obj->exno); //export number of variable
                 printf("obj_varexno=%d ", obj->exno);
+                //why? below code seems invalid
                 if( obj->type->form == String )
                 {
                     t = obj->val >> 16;
@@ -879,12 +863,15 @@ void Export(char* modid, int *newSF, int *key)
         }
         obj = obj->next;
     }
+    //file length should be multiple of 4
+    //so fill the rest space with 0
     do
     {
         Write(R, 0);
         printf("0=%d ", 0);
     }
-    while(!( file_length(R)%4 == 0 ));
+    while(file_length(R)%4 != 0); 
+    //clean typtab[]
     for (Ref = Record+1; Ref <= MAXTYPTAB-1; Ref++)
     {
         typtab[Ref] = 0;
@@ -897,60 +884,58 @@ void Export(char* modid, int *newSF, int *key)
         Mark("can't open temp symbol file");
     }
     sum = 0;
-    fread(&(x), sizeof(int), 1, R); //compute key (checksum)
+    fread(&(x), sizeof(int), 1, R);
     while( !feof(R) )
     {
-        sum = sum + x;
+        sum = sum + x; //compute checksum; this will be module key
         fread(&(x), sizeof(int), 1, R);
     }
     fclose(R);
 
     MakeFileName(filename, modid, ".smb");
-    strcpy(oldname, filename);
-    R1 = fopen(oldname, "rb");
+    strcpy(oldname, filename); //oldname = modulename.smb
+    R1 = fopen(oldname, "rb"); //old modulename.smb file opened
     if(R1 == NULL)
     {
         printf("symbol file was not there\n"); //sum is new key
     }
-    if( R1 != NULL)
+    
+    if( R1 != NULL) //symbol file was there
     {
         fseek( R1, 4, SEEK_SET );
-        fread(&(oldkey), sizeof(int), 1, R1);
+        fread(&(oldkey), sizeof(int), 1, R1); //so read old key
     }
-    else
+    else //symbol file was not there
     {
-        oldkey = sum+1;
+        oldkey = sum+1; //so just make old key different than current checksum
     }
+    
     if(R1 != NULL)
     {
         fclose(R1);
     }
 
 
-    R = fopen(newname, "rb+");
+    R = fopen(newname, "rb+"); //open modulename.tsf file
     if(R == NULL)
     {
         Mark("can't open temp symbol file");
     }
-    if( sum != oldkey )
+    
+    if( sum != oldkey ) //key different means modulename.smb file need to be (over)written
     {
-        if( newSF || (R1 == 0) )
+        if( newSF || (R1 == 0) ) //if compiler option given or old modulename.smb file was not there
         {
             *key = sum;
             *newSF = TRUE;
             fseek( R, 4, SEEK_SET );
-            fwrite(&(sum), sizeof(int), 1, R); //insert checksum
+            fwrite(&(sum), sizeof(int), 1, R); //insert checksum in the modulename.tsf file
             printf("\nexport_sum=%#x ", sum);
-
             fclose(R);
-
-
-
             //rename .tsf to .smb
-            //newname = .tsf
-            //oldname = .smb
+            //newname = modulename.tsf
+            //oldname = modulename.smb
             rename( newname, oldname );
-
         }
         else
         {
@@ -958,26 +943,25 @@ void Export(char* modid, int *newSF, int *key)
             fclose(R);
         }
     }
-    else
+    else //old key and new key same; so symbol file need not be overwritten
     {
         *newSF = FALSE;
         *key = sum;
         fclose(R);
         printf("new symbol file not needed\n");
-        remove( newname);
+        remove( newname); //
     }
 }
 
 //------------------------------- Initialization ------------------------------
 
-//creates one TypeDesc structure
-//and fills in details
+//creates one TypeDesc structure and fills in details
 //keeps the TypeDesc pointer in typtab array
 Type type(int ref, int form, int size)
 {
     Type tp=0;
     NEW((void **)&tp, sizeof(TypeDesc));
-    tp->ref = ref;
+    tp->ref = ref; //reference number of primary types
     tp->form = form;
     tp->size = size;
     tp->base = 0;
@@ -985,10 +969,8 @@ Type type(int ref, int form, int size)
     return tp;
 }
 
-//creates one ObjDesc structure
-//and fills in details
-//for predefined data types,
-//it keeps the ObjDesc pointer in TypDesc
+//creates one ObjDesc structure and fills in details
+//for primary data types, it keeps the ObjDesc pointer in TypDesc
 //not for predefined functions and procedures
 void enter(char *name, int cl, Type type, int n)
 {
@@ -1007,11 +989,10 @@ void enter(char *name, int cl, Type type, int n)
     System = obj;
 }
 
-
 //this must be called before InitSymbolTable()
 void initObt()
 {
-	//TypeDesc is created for each predefined/built-in data types
+	//TypeDesc is created for each primary data types
 	//typetab[Byte] points to Byte's TypeDesc
 	//typetab[Bool] points to Bool's TypeDesc etc.
 	//also for convenience, byteType points to Byte's TypeDesc
@@ -1027,11 +1008,11 @@ void initObt()
     noType = type(NoTyp, NoTyp, 4); //its corresponding Object doesn't exist!
     strType = type(String, String, 8); //its corresponding Object doesn't exist!
 
-    //initialize universe with predefined datatypes and in-built procedures
+    //initialize universe with primary datatypes and predefined procedures
     //by default available in language
 
     //all the enter() below makes a link list of ObjDesc
-    //for predefined datatypes and in-built procedures
+    //for primary datatypes and predefined procedures
     //System now temporarily points to this linked list
     System = 0; //System is temporarily being used here
 
@@ -1104,7 +1085,6 @@ void initObt()
     enter("PUT", SProc, noType, 112);
     enter("GET", SProc, noType, 102);
 }
-
 
 //this must be called after initObt()
 //makes topScope pointing to universe

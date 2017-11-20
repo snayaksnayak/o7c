@@ -49,16 +49,6 @@ int WordSize = 4,
     BR = 0, BLR = 1, BC = 2, BL = 3,
     MI = 0, PL = 8, EQ = 1, NE = 9, LT = 5, GE = 13, LE = 6, GT = 14;
 
-//Item forms and meaning of fields:
-//mode    r      a       b
-//--------------------------------
-//Const   -     value (proc adr)  (immediate value)
-//Var     base   off     -               (direct adr)
-//Par      -     off0     off1         (indirect adr)
-//Reg    regno
-//RegI   regno   off     -
-//Cond  cond   Fchain  Tchain  *)
-
 int pc, varsize;   //program counter, data index
 int tdx, strx;
 int entry;   //main entry point

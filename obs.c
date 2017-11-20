@@ -26,18 +26,12 @@
 #define MAX_EXP 38
 #define NUM_KEYWORDS 34
 
-//If scanner Get(sym) returns IDENT, then identifier name (which is a string) is found here
 char id[ID_LEN];
-//If scanner Get(sym) returns INT or CHAR, then value of that integer or character literal is found here
 int ival;
-//If scanner Get(sym) returns REAL, then value of that real literal is found here
 float rval;
-//If scanner Get(sym) returns STRING, then value of that string literal is found here
 char str[STR_SIZE];
-//and its length is found here
 int slen;
 
-//index for keytab[]
 int k;
 //keytab[] contains keyword number and keyword name.
 struct
@@ -45,11 +39,6 @@ struct
     int sym;
     char id[12];
 } keytab[NUM_KEYWORDS];
-//kwx[] contains indexes of keytab[]
-//if kwx[3]=5 and kwx[4]=9, it means,
-//4 letter keywords are listed from keytab[5] to keytab[8]
-//that means to find n letter keywords, search
-//for (k=kwx[n-1]; k<kwx[n]; k++){ if keytab[k] matches or not...}
 int kwx[10];
 
 //last character read by scanner is available here
@@ -75,7 +64,7 @@ int MUL = 1, RDIV = 2, DIV = 3, MOD = 4, AND = 5,
     RECORD = 61, POINTER = 62, CONST = 63, TYPE = 64, VAR = 65,
     PROCEDURE = 66, BEGIN = 67, IMPORT = 68, MODULE = 69, EOT = 70; //eof = EOT
 
-//fills keytab[] with predefined keywords
+//fills keytab[] with language keywords
 void enter_kw(int sym, char* name)
 {
     strcpy(keytab[k].id, name);
@@ -707,7 +696,7 @@ void Get(int *sym)
 }
 
 //this must be called before initScanner()
-//this fills keytab[] (with predefined keywords) and kwx[]
+//this fills keytab[] (with language keywords) and kwx[]
 void initObs()
 {
     k = 0;
