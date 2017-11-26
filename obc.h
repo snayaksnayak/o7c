@@ -168,15 +168,29 @@ typedef struct Item
     int a, b, r;
     int rdo; //read only
 } Item;
+//The 'class' of ObjDesc is renamed as 'mode' in Item.
+//So they both hold similar values.
+
 //Item forms and meaning of fields:
 //mode    r      a       b
 //--------------------------------
-//Const   -     value (proc adr)  (immediate value)
-//Var     base   off     -               (direct adr)
-//Par      -     off0     off1         (indirect adr)
-//Reg    regno
-//RegI   regno   off     -
-//Cond  cond   Fchain  Tchain  *)
+//Const   -      value   (proc addr)  (immediate value)
+//Var     base   off     -            (direct addr)
+//Par     -      off0    off1         (indirect addr)
+//Reg     regno  -       -
+//RegI    regno  off     -
+//Cond    cond   Fchain  Tchain
+
+//Note the similarity of the two types Item and Object.
+//Both describe objects, but whereas
+//Objects represent declared, named objects,
+//whose visibility reaches beyond
+//the construct of their declaration,
+//Items describe objects which are
+//always strictly bound to their syntactic construct.
+//Therefore, it is strongly recommended
+//not to allocate Items dynamically (in a heap),
+//but rather to declare them as local parameters and variables.
 
 extern int WordSize;
 extern int pc;
@@ -366,3 +380,9 @@ void Close(char* modid, int key, int nofent);
 //btype = type
 //-------------------
 
+
+//Addressing modes:
+//Immediate: here is the value itself
+//Direct: value is at this address
+//Register: value is in this register
+//RegisterIndirect: value is at address contained in this register

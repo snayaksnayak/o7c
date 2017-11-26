@@ -2331,8 +2331,6 @@ void Declarations(int *varsize)
 
     pbsList = NIL;
 
-
-
     //sync
     if( (sym < CONST) && (sym != END) && (sym != RETURN) )
     {
@@ -2342,15 +2340,12 @@ void Declarations(int *varsize)
             Get(&sym);
         }
         while(!( (sym >= CONST) || (sym == END) || (sym == RETURN) ));
-
-
     }
 
     //DeclarationSequence = [CONST {ConstDeclaration ";"}] [TYPE {TypeDeclaration ";"}] [VAR {VariableDeclaration ";"}] {ProcedureDeclaration ";"}.
     if( sym == CONST )
     {
         Get(&sym);
-
 
         //ConstDeclaration = identdef "=" ConstExpression.
         //ConstExpression = expression.
@@ -2630,6 +2625,8 @@ void _Module()
             Mark("period missing");
         }
 
+		//whole module is parsed,
+		//now proceed to create symbol file
         if( (errcnt == 0) && (version != 0) )
         {
 			//create symbol file for compiled module
