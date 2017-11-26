@@ -21,7 +21,6 @@
 #define MAXTYPTAB 64
 int versionkey = 1;
 
-
 //class values
 int Head = 0, Const = 1, Var = 2, Par = 3, Fld = 4, Typ = 5,
     SProc = 6, SFunc = 7, Mod = 8;
@@ -658,7 +657,7 @@ void OutType(FILE *R, Type t)
             Write(R, 0); //write 0
             printf("type_Ref=%d ", 0);
         }
-        
+
         Write(R, t->form); //form is written for both primary and secondary types
         printf("type_form=%d ", t->form);
         if( t->form == Pointer )
@@ -683,7 +682,7 @@ void OutType(FILE *R, Type t)
             {
                 OutType(R, noType); //why? can't we put 0?
             }
-            
+
             if( obj != 0 )
             {
                 WriteNum(R, obj->exno);
@@ -694,7 +693,7 @@ void OutType(FILE *R, Type t)
                 Write(R, 0);
                 printf("type_recexno=%d ", 0);
             }
-            
+
             WriteNum(R, t->nofpar);
             WriteNum(R, t->size);
             printf("type_recnofpar=%d ", t->nofpar);
@@ -870,7 +869,7 @@ void Export(char* modid, int *newSF, int *key)
         Write(R, 0);
         printf("0=%d ", 0);
     }
-    while(file_length(R)%4 != 0); 
+    while(file_length(R)%4 != 0);
     //clean typtab[]
     for (Ref = Record+1; Ref <= MAXTYPTAB-1; Ref++)
     {
@@ -899,7 +898,7 @@ void Export(char* modid, int *newSF, int *key)
     {
         printf("symbol file was not there\n"); //sum is new key
     }
-    
+
     if( R1 != NULL) //symbol file was there
     {
         fseek( R1, 4, SEEK_SET );
@@ -909,7 +908,7 @@ void Export(char* modid, int *newSF, int *key)
     {
         oldkey = sum+1; //so just make old key different than current checksum
     }
-    
+
     if(R1 != NULL)
     {
         fclose(R1);
@@ -921,7 +920,7 @@ void Export(char* modid, int *newSF, int *key)
     {
         Mark("can't open temp symbol file");
     }
-    
+
     if( sum != oldkey ) //key different means modulename.smb file need to be (over)written
     {
         if( newSF || (R1 == 0) ) //if compiler option given or old modulename.smb file was not there

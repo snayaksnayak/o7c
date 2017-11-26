@@ -33,20 +33,15 @@ int dc;    //data counter
 int level, exno, version;
 int newSF;  //compiler option: create/overwrite new symbol file?
 
-//function pointers to avoid forward reference
-void (*expression)(Item *x);
-void (*_Type)(Type *type);
-void (*FormalType)(Type *typ, int dim);
-
 char modid[ID_LEN]; //holds currentnly compiling module name
 PtrBase pbsList;   //list of names of pointer base types
 Object dummy=0;
 
 //some forward declarations
 void Declarations(int *varsize);
-void expression0(Item *x);
-void Type0(Type *type);
-void FormalType0(Type *typ, int dim);
+void expression(Item *x);
+void _Type(Type *type);
+void FormalType(Type *typ, int dim);
 
 void initObp()
 {
@@ -54,11 +49,6 @@ void initObp()
     NEW((void **)&dummy, sizeof(ObjDesc));
     dummy->class = Var;
     dummy->type = intType;
-
-    //initialize the function pointers
-    expression = expression0;
-    _Type = Type0;
-    FormalType = FormalType0;
 }
 
 //consume a token if found, else print error message
@@ -984,19 +974,18 @@ void SimpleExpression(Item *x)
 }
 
 
-void expression0(Item *x)
+void expression(Item *x)
 {
     Item y;
     Object obj=0;
     int rel, xf, yf;
 
-
     //expression = SimpleExpression [relation SimpleExpression].
     SimpleExpression(x);
     //relation = "=" | "#" | "<" | "<=" | ">" | ">=" | IN | IS.
-    if( (sym >= EQL) && (sym <= GEQ) )
+    if( (sym >= EQL) && (sym <= GEQ) ) //EQL = 9, NEQ = 10, LSR = 11, LEQ = 12, GTR = 13, GEQ = 14
     {
-        rel = sym;
+        rel = sym; //remember the relational operator
         Get(&sym);
         SimpleExpression(&y);
         xf = x->type->form;
@@ -1996,7 +1985,7 @@ void ProcedureType(Type ptype, int *parblksize)
 
 }
 
-void FormalType0(Type *typ, int dim)
+void FormalType(Type *typ, int dim)
 {
     Object obj=0;
     int dmy;
@@ -2057,7 +2046,7 @@ void CheckRecLevel(int lev)
     }
 }
 
-void Type0(Type *type)
+void _Type(Type *type)
 {
     int dmy;
     Object obj=0;

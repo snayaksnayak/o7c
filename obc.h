@@ -171,15 +171,18 @@ typedef struct Item
 //The 'class' of ObjDesc is renamed as 'mode' in Item.
 //So they both hold similar values.
 
-//Item forms and meaning of fields:
+//Item modes and meaning of fields:
 //mode    r      a       b
 //--------------------------------
 //Const   -      value   (proc addr)  (immediate value)
 //Var     base   off     -            (direct addr)
 //Par     -      off0    off1         (indirect addr)
+//Fld     -      -       -
+//Typ     -      -       -
+//--------------------------------
 //Reg     regno  -       -
 //RegI    regno  off     -
-//Cond    cond   Fchain  Tchain
+//Cond    cond   Tjump   Fjump        (T=True, F=False)
 
 //Note the similarity of the two types Item and Object.
 //Both describe objects, but whereas
@@ -191,6 +194,16 @@ typedef struct Item
 //Therefore, it is strongly recommended
 //not to allocate Items dynamically (in a heap),
 //but rather to declare them as local parameters and variables.
+
+//Item helps in doing 1.Type compatibility check,
+//2.compiletime expression evaluation
+//3.code generation while parsing.
+
+//Item mode reflect the target computer's architecture,
+//in particular its addressing modes.
+//The more addressing modes a computer offers,
+//the more item modes are needed to represent them.
+
 
 extern int WordSize;
 extern int pc;
@@ -329,12 +342,14 @@ void Close(char* modid, int key, int nofent);
 //ProcedureHeading = PROCEDURE identdef [FormalParameters].
 //ProcedureType = PROCEDURE [FormalParameters].
 //qualident = [ident "."] ident.
+//---ex. module.variable
 //real = digit {digit} "." {digit} [ScaleFactor].
 //RecordType = RECORD ["(" BaseType ")"] [FieldListSequence] END.
 //relation = "=" | "#" | "<" | "<=" | ">" | ">=" | IN | IS.
 //RepeatStatement = REPEAT StatementSequence UNTIL expression.
 //ScaleFactor = "E" ["+" | "-"] digit {digit}.
 //selector = "." ident | "[" ExpList "]" | "^" | "(" qualident ")".
+//---ex. record.element | array[rowindex, columnindex] | recordpointer^.element
 //set = "{" [element {"," element}] "}".
 //SimpleExpression = ["+" | "-"] term {AddOperator term}.
 //statement = [assignment | ProcedureCall | IfStatement | CaseStatement | WhileStatement | RepeatStatement | ForStatement].
@@ -371,17 +386,18 @@ void Close(char* modid, int key, int nofent);
 //object = (CON name type (value | exno) //exno is for procedures!
 //        | TYP name type [{fix} 0]
 //        | VAR name type exno).
-//type =      -ref | ref (PTR btype
-//                      | ARR btype len size
-//                      | PRO btype {param} 0).
-//                      | REC btype exno nofpar size {field} 0
-//param =                           (VAR | PAR) rdo type.
-//field =                                             FLD name type offset.
-//btype = type
+//type =      -ref | ref (PTR basetype
+//                      | ARR basetype len size
+//                      | PRO basetype {param} 0).
+//                      | REC basetype exno nofpar size {field} 0
+//param =                              (VAR | PAR) rdo type.
+//field =                                                FLD name type offset.
+//basetype = type
 //-------------------
 
 
-//Addressing modes:
+//Meaning of addressing modes:
+//----------------------------
 //Immediate: here is the value itself
 //Direct: value is at this address
 //Register: value is in this register
