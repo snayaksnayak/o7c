@@ -294,72 +294,140 @@ void Close(char* modid, int key, int nofent);
 
 //Oberon7 syntax in EBNF:
 //-----------------------
-//[] means optional, i.e. 0 or once
-//{} means 0 or more
+//[] means 0 or once; i.e. optional
+//{} means 0 or more; i.e. optional but repetatable
 //-----------------------
 //ActualParameters = "(" [ExpList] ")".
+		//ex. myproc(4,6)
 //AddOperator = "+" | "-" | OR.
+		//ex. + | - | OR
 //ArrayType = ARRAY length {"," length} OF type.
+		//ex. TYPE k: ARRAY 3+1,4 OF INTEGER;
 //assignment = designator ":=" expression.
+		//ex. a := 8+9;
 //BaseType = qualident.
+		//ex. TYPE mytype = POINTER TO mymodule.myrecord;
 //case = [CaseLabelList ":" StatementSequence].
+		//ex. CASE myvar OF 1,3:Out.String("hi");Out.String("bye")END
 //CaseLabelList = LabelRange {"," LabelRange}.
+		//ex. CASE myvar OF 1,3..5:Out.String("hi");Out.String("bye") | 6:Out.String("bye");Out.String("hi") END
 //CaseStatement = CASE expression OF case {"|" case} END.
+		//ex. CASE myvar OF 1:Out.String("hi");Out.String("bye") | 2:Out.String("bye");Out.String("hi") END
 //ConstDeclaration = identdef "=" ConstExpression.
+		//ex. CONST PI* = 3.142;
 //ConstExpression = expression.
+		//ex. 5+7
 //DeclarationSequence = [CONST {ConstDeclaration ";"}] [TYPE {TypeDeclaration ";"}] [VAR {VariableDeclaration ";"}] {ProcedureDeclaration ";"}.
+		//ex. CONST PI* = 3.142; TYPE T* = INTEGER; VAR x: INTEGER; PROCEDURE myproc(x:INTEGER):REAL; VAR y:INTEGER; BEGIN y:=1; RETURN x+y END myproc;
+		//note that there is no semicolon at the end of RETURN
 //designator = qualident {selector}.
+		//ex. myvar | mymodule.myvar | mymodule.myvar[i]
+		//see selector for more exmples
 //digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9".
+		//digits 0 to 9
 //element = expression [".." expression].
+		//ex. see second element of the set {1, 2..5, n+1..2*k}
 //ExpList = expression {"," expression}.
+		//ex. multiple expressions separated by comma as in 5,n+2,9
 //expression = SimpleExpression [relation SimpleExpression].
+		//ex. -6 < k
 //factor = number | string | NIL | TRUE | FALSE | set | designator [ActualParameters] | "(" expression ")" | "~" factor.
+		//ex. 3 | "hi" | {1, 2} | myvar | myproc(9,6) | (6*7) | ~mybool
 //FieldList = IdentList ":" type.
+		//ex. x,y,z:INTEGER
 //FieldListSequence = FieldList {";" FieldList}.
+		//ex. x,y:INTEGER;z:REAL
 //FormalParameters = "(" [FPSection {";" FPSection}] ")" [":" qualident].
+		//ex. PROCEDURE myproc(VAR x,y:INTEGER; z:CHAR):REAL;
 //FormalType = {ARRAY OF} qualident | ProcedureType.
+		//ex. PROCEDURE myproc(VAR x,y:INTEGER):REAL;
+		//ex. PROCEDURE myproc(x,y: ARRAY OF module.type):REAL;
+		//ex. PROCEDURE myproc(VAR x,y: PROCEDURE):REAL;
+		//ex. PROCEDURE myproc(x,y: PROCEDURE(a,b:INTEGER):INTEGER):REAL;
 //ForStatement = FOR ident ":=" expression TO expression [BY ConstExpression] DO StatementSequence END.
+		//ex. FOR i:=3 TO 9 BY 2 DO k:=k+1 END
 //FPSection = [VAR] ident {"," ident} ":" FormalType.
+		//ex. PROCEDURE myproc(VAR x,y:INTEGER):REAL;
 //hexDigit = digit | "A" | "B" | "C" | "D" | "E" | "F".
+		//ex. 3BE4
 //identdef = ident ["*"].
+		//ex. VAR k*:INTEGER;
 //ident = letter {letter | digit}.
+		//ex. class5mark
 //IdentList = identdef {"," identdef}.
+		//ex. VAR x*, y* : INTEGER;
 //IfStatement = IF expression THEN StatementSequence {ELSIF expression THEN StatementSequence} [ELSE StatementSequence] END.
+		//ex. IF a=0 THEN b:=9 ELSIF a=1 THEN b:=8 ELSIF a=2 THEN b:=7 ELSE b:=6 END
 //import = ident [":=" ident].
+		//ex. IMPORT mymodule := mm;
 //ImportList = IMPORT import {"," import} ";".
+		//ex. IMPORT mymodule1, mymodule2;
 //integer = digit {digit} | digit {hexDigit} "H".
+		//ex. 32 | 0BH | 5BH
+		//note that hexadecimal numbers start with a digit, ends with an H.
 //label = integer | string | qualident.
+		//ex. 43 | "hi" | myrecord.myelement
+		//ex. CASE myvar OF "hi":Out.String("hi")END
 //LabelRange = label [".." label].
+		//ex. CASE myvar OF 3..5:Out.String("hi")END
 //length = ConstExpression.
+		//ex. 5+7
 //letter = "A" | "B" | ... | "Z" | "a" | "b" | ... | "z".
+		//ex. capital and small letters
 //module = MODULE ident ";" [ImportList] DeclarationSequence [BEGIN StatementSequence] END ident "." .
+		//ex. MODULE mymod; IMPORT mymodule; VAR x:INTEGER; BEGIN x:=9 END mymod .
+		//note that there is a full stop mark at the END of module identifier.
 //MulOperator = "*" | "/" | DIV | MOD | "&".
+		//ex. * | / | DIV | MOD | &
 //number = integer | real.
+		//ex. 34 | 3.4
 //PointerType = POINTER TO type.
+		//ex. TYPE x: POINTER TO myrecord;
 //ProcedureBody = DeclarationSequence [BEGIN StatementSequence] [RETURN expression] END.
+		//ex. PROCEDURE myproc(x:INTEGER):REAL; VAR y:INTEGER; BEGIN y:=1; RETURN x+y END myproc;
 //ProcedureCall = designator [ActualParameters].
+		//ex. myproc | myfunc(4,6)
 //ProcedureDeclaration = ProcedureHeading ";" ProcedureBody ident.
+		//ex. PROCEDURE myproc(x:INTEGER):REAL; VAR y:INTEGER; BEGIN y:=1; RETURN x+y END myproc;
 //ProcedureHeading = PROCEDURE identdef [FormalParameters].
+		//ex. PROCEDURE myproc*(x:INTEGER):REAL; VAR y:INTEGER; BEGIN y:=1; RETURN x+y END myproc;
 //ProcedureType = PROCEDURE [FormalParameters].
+		//ex. TYPE mp: PROCEDURE(a,b:INTEGER):INTEGER;
 //qualident = [ident "."] ident.
-//---ex. module.variable
+		//ex. mymodule.myvar | myvar
 //real = digit {digit} "." {digit} [ScaleFactor].
+		//ex. 34.4 | 34.4E-21
 //RecordType = RECORD ["(" BaseType ")"] [FieldListSequence] END.
+		//ex. TYPE mytype = RECORD (basetype) x,y:INTEGER; z:CHAR END;
 //relation = "=" | "#" | "<" | "<=" | ">" | ">=" | IN | IS.
+		//ex. = | # | < | <= | > | >= | IN | IS
 //RepeatStatement = REPEAT StatementSequence UNTIL expression.
+		//ex. REPEAT a:=a+1 UNTIL a>10
 //ScaleFactor = "E" ["+" | "-"] digit {digit}.
+		//ex. 34.4E-21
 //selector = "." ident | "[" ExpList "]" | "^" | "(" qualident ")".
-//---ex. record.element | array[rowindex, columnindex] | recordpointer^.element
+		//ex. record.element | array[rowindex, columnindex] | recordpointer^.element (= recordpointer.element) | p(Circle).radius (here p is of type Figure)
 //set = "{" [element {"," element}] "}".
+		//ex. a set is {1, 2..5, n+1..2*k}
 //SimpleExpression = ["+" | "-"] term {AddOperator term}.
+		//ex. -3 | -3 + 4 | -3 - 4
 //statement = [assignment | ProcedureCall | IfStatement | CaseStatement | WhileStatement | RepeatStatement | ForStatement].
+		//ex. a:=1 | myproc | myproc(3) | IF a=0 THEN b:=9 END | CASE myvar OF 1: Out.String("hi") END | WHILE a>9 DO b:=1 END | REPEAT a:=a+1 UNTIL a>10 | FOR i:=3 TO 9 BY 2 DO k:=k+1 END
 //StatementSequence = statement {";" statement}.
+		//ex. a:=2;b:=6
 //string = """ {character} """ | digit {hexDigit} "X".
+		//ex. "abcd" | 3BX
+		//note that hex string starts with a digit, ends with an X.
 //term = factor {MulOperator factor}.
+		//ex. 3*4 | 5/8
 //TypeDeclaration = identdef "=" type.
+		//ex. TYPE T* = INTEGER;
 //type = qualident | ArrayType | RecordType | PointerType | ProcedureType.
+		//ex. TYPE k: mymod.mytype; | TYPE k: ARRAY 3+1,4 OF INTEGER; | TYPE mytype = RECORD (basetype) x,y:INTEGER; z:CHAR END; | TYPE x: POINTER TO myrecord; | TYPE mp: PROCEDURE(a,b:INTEGER):INTEGER;
 //VariableDeclaration = IdentList ":" type.
+		//ex. VAR x,y: INTEGER;
 //WhileStatement = WHILE expression DO StatementSequence {ELSIF expression DO StatementSequence} END.
+		//ex. WHILE a>9 DO b:=1 ELSIF a>5 DO b:=2 ELSIF a>3 DO b:=3 END
 //-----------------------
 
 //Recursive Parsing Strategy:

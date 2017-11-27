@@ -2354,7 +2354,7 @@ void Declarations(int *varsize)
                 Mark("= ?");
             }
             expression(&x);
-            if( (x.type->form == String) && (x.b == 2) )
+            if( (x.type->form == String) && (x.b == 2) ) //why? 2?
             {
                 StrToChar(&x);
             }
