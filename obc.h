@@ -17,7 +17,7 @@ extern char id[]; //If scanner Get(sym) returns IDENT, then identifier name (whi
 extern int ival; //If scanner Get(sym) returns INT or CHAR, then value of that integer or character literal is found here
 extern float rval; //If scanner Get(sym) returns REAL, then value of that real literal is found here
 extern char str[]; //If scanner Get(sym) returns STRING, then value of that string literal is found here
-extern int slen; //and its length is found here
+extern int slen; //and its length is found here, slen includes '\0' character, so 1 bigger than actual string length
 
 extern int errcnt; //scanner keeps count of errors reported
 extern int k; //index for keytab[]

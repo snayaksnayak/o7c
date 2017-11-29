@@ -50,7 +50,8 @@ int WordSize = 4,
     MI = 0, PL = 8, EQ = 1, NE = 9, LT = 5, GE = 13, LE = 6, GT = 14;
 
 int pc, varsize;   //program counter, data index
-int tdx, strx;
+int tdx;
+int strx; //global string length counter for all string constants
 int entry;   //main entry point
 int RH;  //available registers R[0] ... R[H-1]
 int curSB;  //current static base in SB
@@ -62,7 +63,7 @@ int version;  //0 = RISC-0, 1 = RISC-5
 int relmap[6];  //condition codes for relations
 int code[maxCode];
 int data[maxTD];//type descriptors
-char _str[maxStrx];
+char _str[maxStrx]; //strx serves as its index
 
 //instruction assemblers according to formats
 void Put0(int op, int a, int b, int c)
@@ -454,29 +455,32 @@ void MakeRealItem(Item* x, float val)
         int i;
     } u;
     u.f = val;
+    
     x->mode = Const;
     x->type = realType;
-    x->a = u.i;
+    x->a = u.i; //equivalent to: x->a = val
+				//type casting from float to int will truncate the value
+				//so union trick is used to put a float value unchanged into int variable
 }
-//copies string from ORS-buffer to ORG-string array
+//copies string from ORS-buffer str[] to ORG-string array _str[]
 void MakeStringItem(Item* x, int len)
 {
     int i;
     x->mode = Const;
     x->type = strType;
-    x->a = strx;
-    x->b = len;
+    x->a = strx; //address of this string constant
+    x->b = len; //length of this string constant as given by ORS, which covers '\0'
     i = 0;
     if( strx + len + 4 < maxStrx )
     {
-        while( len > 0 )
+        while( len > 0 ) //copy the string constant and the trailing '\0' as well
         {
             _str[strx] = str[i];
             strx++;
             i++;
             len--;
         }
-        while( strx % 4 != 0 )
+        while( strx % 4 != 0 ) //make strx 4 byte aligned
         {
             _str[strx] = '\0';
             strx++;
@@ -2461,19 +2465,19 @@ void Close(char* modid, int key, int nofent)
     i = 0;
     while( i < tdx )
     {
-        WriteInt(R, data[i]);
-        i++;//type descriptors
+        WriteInt(R, data[i]); //type descriptors
+        i++;
     }
-    WriteInt(R, varsize - tdx*4);//data
-    WriteInt(R, strx);
-    for (i = 0; i <= strx-1; i++)//strings
+    WriteInt(R, varsize - tdx*4); //data
+    WriteInt(R, strx); //write length for all string constants contained in ORG _str[]
+    for (i = 0; i <= strx-1; i++) //now write those strings from _str[]
     {
-        Write(R, _str[i]);//code len
+        Write(R, _str[i]);
     }
-    WriteInt(R, pc);
+    WriteInt(R, pc); //write code length
     for(i = 0; i <= pc-1; i++)
     {
-        WriteInt(R, code[i]); //program
+        WriteInt(R, code[i]); //write the code
     }
     obj = topScope->next;
     while( obj != NIL )//commands

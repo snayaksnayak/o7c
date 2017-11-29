@@ -789,7 +789,7 @@ void factor(Item *x)
     }
     else if( sym == STRING )
     {
-        MakeStringItem(x, slen);
+        MakeStringItem(x, slen); //supply string length known from ORS
         Get(&sym);
     }
     else if( sym == LPAREN )
