@@ -455,7 +455,7 @@ void MakeRealItem(Item* x, float val)
         int i;
     } u;
     u.f = val;
-    
+
     x->mode = Const;
     x->type = realType;
     x->a = u.i; //equivalent to: x->a = val
@@ -2278,6 +2278,7 @@ void Condition(Item* x)
     SetCC(x, x->a);
 }
 
+//initialize ORG
 void Open(int v)
 {
     pc = 0;

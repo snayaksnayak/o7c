@@ -732,7 +732,7 @@ void factor(Item *x)
         {
             Get(&sym);
         }
-        while(!( (sym >= CHAR) && (sym <= IDENT) ));
+        while(!((sym >= CHAR) && (sym <= IDENT)));
     }
 
 
@@ -982,11 +982,13 @@ void expression(Item *x)
 
     //expression = SimpleExpression [relation SimpleExpression].
     SimpleExpression(x);
+
     //relation = "=" | "#" | "<" | "<=" | ">" | ">=" | IN | IS.
     if( (sym >= EQL) && (sym <= GEQ) ) //EQL = 9, NEQ = 10, LSR = 11, LEQ = 12, GTR = 13, GEQ = 14
     {
         rel = sym; //remember the relational operator
         Get(&sym);
+
         SimpleExpression(&y);
         xf = x->type->form;
         yf = y.type->form;
@@ -2186,11 +2188,12 @@ void ProcedureDecl()
     int internal;
 
     internal = FALSE;
+
     //DeclarationSequence = [CONST {ConstDeclaration ";"}] [TYPE {TypeDeclaration ";"}] [VAR {VariableDeclaration ";"}] {ProcedureDeclaration ";"}.
     //ProcedureDeclaration = ProcedureHeading ";" ProcedureBody ident.
     //ProcedureHeading = PROCEDURE identdef [FormalParameters].
+    Get(&sym); //we found token PROCEEDURE, so Get(); see _Module() function.
 
-    Get(&sym);
     if( sym == MUL )
     {
         Get(&sym);
@@ -2317,7 +2320,6 @@ void Declarations(int *varsize)
     PtrBase ptbase=0;
     int expo;
     char id[ID_LEN];
-
     pbsList = NIL;
 
     //sync
@@ -2339,12 +2341,11 @@ void Declarations(int *varsize)
         //ConstDeclaration = identdef "=" ConstExpression.
         //ConstExpression = expression.
         //identdef = ident ["*"].
-
         while( sym == IDENT )
         {
             CopyId(id);
             Get(&sym);
-            CheckExport(&expo);//consumes "*"
+            CheckExport(&expo); //consumes "*"
             if( sym == EQL )
             {
                 Get(&sym);
@@ -2353,7 +2354,7 @@ void Declarations(int *varsize)
             {
                 Mark("= ?");
             }
-            expression(&x);
+            expression(&x); //srinu
             if( (x.type->form == String) && (x.b == 2) ) //why? 2?
             {
                 StrToChar(&x);
@@ -2378,6 +2379,7 @@ void Declarations(int *varsize)
     if( sym == TYPE )
     {
         Get(&sym);
+
         //TypeDeclaration = identdef "=" type.
         while( sym == IDENT )
         {
@@ -2430,13 +2432,13 @@ void Declarations(int *varsize)
             }
 
             Check(SEMICOLON, "; missing"); //consumes ";"
-
         }
     }
 
     if( sym == VAR )
     {
         Get(&sym);
+
         //VariableDeclaration = IdentList ":" type.
         while( sym == IDENT )
         {
@@ -2489,13 +2491,12 @@ void _Module()
     char impid[ID_LEN];
     char impid1[ID_LEN];
 
-    Get(&sym); //This is the first Get()
-    //now onwards, whenever a desired token is found, do a Get()!
+    Get(&sym); //This is the first Get(); after this whenever a token is consumed, immediately do another Get()!
 
     //module = MODULE ident ";" [ImportList] DeclarationSequence [BEGIN StatementSequence] END ident "." .
-    if( sym == MODULE )
+    if( sym == MODULE ) //we are looking for token MODULE,
     {
-        Get(&sym);
+        Get(&sym); //we found the token MODULE, so do an Get()
         if( sym == MUL )
         {
             version = 0;
@@ -2506,10 +2507,8 @@ void _Module()
             version = 1;
         }
 
-        //initialize symbol table
-        InitSymbolTable();
-        //creates a new scope
-        OpenScope();
+        InitSymbolTable(); //initialize symbol table
+        OpenScope(); //creates a new scope
 
         if( sym == IDENT )
         {
@@ -2554,11 +2553,10 @@ void _Module()
                 }
                 else
                 {
-                    strcpy(impid1, impid); //if impid1 is not given
+                    strcpy(impid1, impid); //if impid1 is not given, make impid1 = impid
                 }
 
-                //import module
-                Import(impid, impid1);
+                Import(impid, impid1); //import module
 
                 if( sym == COMMA )
                 {
@@ -2572,10 +2570,9 @@ void _Module()
             Check(SEMICOLON, "no ;");
         }
 
-        Open(version);
+        Open(version); //initialize ORG
 
-        //consumes DeclarationSequence except ProcedureDeclaration
-        Declarations(&dc);
+        Declarations(&dc); //consumes DeclarationSequence except ProcedureDeclaration
 
         SetDataSize((dc + 3) / 4 * 4); //aligning to 4 bytes
 
