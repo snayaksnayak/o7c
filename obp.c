@@ -688,22 +688,19 @@ void set(Item *x)
     Item y;
 
     //set = "{" [element {"," element}] "}".
-    if(
-
-        sym >= IF
-
-    )
+    if( sym >= IF )
     {
         if( sym != RBRACE )
         {
             Mark(" } missing");
         }
-        MakeConstItem(x, setType, 0); //empty set
+        MakeConstItem(x, setType, 0); //empty set just for continue parsing
     }
     else
     {
+		//element = expression [".." expression].
         element(x);
-        while( (sym < RPAREN) || (sym > RBRACE) )
+        while( (sym < RPAREN) || (sym > RBRACE) ) //why?
         {
             if( sym == COMMA )
             {
@@ -719,6 +716,8 @@ void set(Item *x)
     }
 }
 
+//this is the most important function
+//all Items are created here
 void factor(Item *x)
 {
     Object obj=0;
@@ -734,7 +733,6 @@ void factor(Item *x)
         }
         while(!((sym >= CHAR) && (sym <= IDENT)));
     }
-
 
     //factor = number | string | NIL | TRUE | FALSE | set | designator [ActualParameters] | "(" expression ")" | "~" factor.
     //designator = qualident {selector}.
@@ -824,10 +822,8 @@ void factor(Item *x)
     else
     {
         Mark("not a factor");
-        MakeConstItem(x, intType, 0);
+        MakeConstItem(x, intType, 0); //just to continue parsing
     }
-
-    (void)rx;
 }
 
 
@@ -2185,9 +2181,7 @@ void ProcedureDecl()
     char procid[ID_LEN];
     Item x;
     int locblksize, parblksize, L;
-    int internal;
-
-    internal = FALSE;
+    int internal = FALSE;
 
     //DeclarationSequence = [CONST {ConstDeclaration ";"}] [TYPE {TypeDeclaration ";"}] [VAR {VariableDeclaration ";"}] {ProcedureDeclaration ";"}.
     //ProcedureDeclaration = ProcedureHeading ";" ProcedureBody ident.
