@@ -477,7 +477,7 @@ void Close(char* modid, int key, int nofent);
 //Setup instructions:
 //# sh < gtools.shar
 //# make all
-//Modified EBNF grammar to input to the tool:
+//Oberon7 EBNF grammar to input to the tool:
 //(first line denote start symbol for the grammar,
 //second line denote epsilon symbol for the grammar.)
 

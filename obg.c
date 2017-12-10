@@ -438,8 +438,8 @@ void loadStringAdr(Item* x)
 
 
 
-// Items: Conversion from constants or from Objects on the Heap to Items on the Stack
-
+// Items: Conversion from literals or from Objects on the Heap to Items on the Stack
+// makes item for INT, CHAR, NILL, FALS, TRU symbols/literals
 void MakeConstItem(Item* x, Type typ, int val)
 {
     x->mode = Const;
@@ -447,6 +447,7 @@ void MakeConstItem(Item* x, Type typ, int val)
     x->a = val;
 }
 
+//makes item for REAL symbols/literals
 void MakeRealItem(Item* x, float val)
 {
     union
@@ -462,6 +463,8 @@ void MakeRealItem(Item* x, float val)
 				//type casting from float to int will truncate the value
 				//so union trick is used to put a float value unchanged into int variable
 }
+
+//makes item for constant string literals
 //copies string from ORS-buffer str[] to ORG-string array _str[]
 void MakeStringItem(Item* x, int len)
 {
