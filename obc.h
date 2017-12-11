@@ -292,144 +292,6 @@ void Condition(Item* x);
 void Close(char* modid, int key, int nofent);
 
 
-//Oberon7 syntax in EBNF:
-//-----------------------
-//[] means 0 or once; i.e. optional
-//{} means 0 or more; i.e. optional but repetatable
-//-----------------------
-//ActualParameters = "(" [ExpList] ")".
-		//ex. myproc(4,6)
-//AddOperator = "+" | "-" | OR.
-		//ex. + | - | OR
-//ArrayType = ARRAY length {"," length} OF type.
-		//ex. TYPE k: ARRAY 3+1,4 OF INTEGER;
-//assignment = designator ":=" expression.
-		//ex. a := 8+9;
-//BaseType = qualident.
-		//ex. TYPE mytype = POINTER TO mymodule.myrecord;
-//case = [CaseLabelList ":" StatementSequence].
-		//ex. CASE myvar OF 1,3:Out.String("hi");Out.String("bye")END
-//CaseLabelList = LabelRange {"," LabelRange}.
-		//ex. CASE myvar OF 1,3..5:Out.String("hi");Out.String("bye") | 6:Out.String("bye");Out.String("hi") END
-//CaseStatement = CASE expression OF case {"|" case} END.
-		//ex. CASE myvar OF 1:Out.String("hi");Out.String("bye") | 2:Out.String("bye");Out.String("hi") END
-//ConstDeclaration = identdef "=" ConstExpression.
-		//ex. CONST PI* = 3.142;
-//ConstExpression = expression.
-		//ex. 5+7
-//DeclarationSequence = [CONST {ConstDeclaration ";"}] [TYPE {TypeDeclaration ";"}] [VAR {VariableDeclaration ";"}] {ProcedureDeclaration ";"}.
-		//ex. CONST PI* = 3.142; TYPE T* = INTEGER; VAR x: INTEGER; PROCEDURE myproc(x:INTEGER):REAL; VAR y:INTEGER; BEGIN y:=1; RETURN x+y END myproc;
-		//note that there is no semicolon at the end of RETURN
-//designator = qualident {selector}.
-		//ex. myvar | mymodule.myvar | mymodule.myvar[i]
-		//see selector for more exmples
-//digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9".
-		//digits 0 to 9
-//element = expression [".." expression].
-		//ex. see second element of the set {1, 2..5, n+1..2*k}
-//ExpList = expression {"," expression}.
-		//ex. multiple expressions separated by comma as in 5,n+2,9
-//expression = SimpleExpression [relation SimpleExpression].
-		//ex. -6 < k
-//factor = number | string | NIL | TRUE | FALSE | set | designator [ActualParameters] | "(" expression ")" | "~" factor.
-		//ex. 3 | "hi" | {1, 2} | myvar | myproc(9,6) | (6*7) | ~mybool
-//FieldList = IdentList ":" type.
-		//ex. x,y,z:INTEGER
-//FieldListSequence = FieldList {";" FieldList}.
-		//ex. x,y:INTEGER;z:REAL
-//FormalParameters = "(" [FPSection {";" FPSection}] ")" [":" qualident].
-		//ex. PROCEDURE myproc(VAR x,y:INTEGER; z:CHAR):REAL;
-//FormalType = {ARRAY OF} qualident | ProcedureType.
-		//ex. PROCEDURE myproc(VAR x,y:INTEGER):REAL;
-		//ex. PROCEDURE myproc(x,y: ARRAY OF module.type):REAL;
-		//ex. PROCEDURE myproc(VAR x,y: PROCEDURE):REAL;
-		//ex. PROCEDURE myproc(x,y: PROCEDURE(a,b:INTEGER):INTEGER):REAL;
-//ForStatement = FOR ident ":=" expression TO expression [BY ConstExpression] DO StatementSequence END.
-		//ex. FOR i:=3 TO 9 BY 2 DO k:=k+1 END
-//FPSection = [VAR] ident {"," ident} ":" FormalType.
-		//ex. PROCEDURE myproc(VAR x,y:INTEGER):REAL;
-//hexDigit = digit | "A" | "B" | "C" | "D" | "E" | "F".
-		//ex. 3BE4
-//identdef = ident ["*"].
-		//ex. VAR k*:INTEGER;
-//ident = letter {letter | digit}.
-		//ex. class5mark
-//IdentList = identdef {"," identdef}.
-		//ex. VAR x*, y* : INTEGER;
-//IfStatement = IF expression THEN StatementSequence {ELSIF expression THEN StatementSequence} [ELSE StatementSequence] END.
-		//ex. IF a=0 THEN b:=9 ELSIF a=1 THEN b:=8 ELSIF a=2 THEN b:=7 ELSE b:=6 END
-//import = ident [":=" ident].
-		//ex. IMPORT mymodule := mm;
-//ImportList = IMPORT import {"," import} ";".
-		//ex. IMPORT mymodule1, mymodule2;
-//integer = digit {digit} | digit {hexDigit} "H".
-		//ex. 32 | 0BH | 5BH
-		//note that hexadecimal numbers start with a digit, ends with an H.
-//label = integer | string | qualident.
-		//ex. 43 | "hi" | myrecord.myelement
-		//ex. CASE myvar OF "hi":Out.String("hi")END
-//LabelRange = label [".." label].
-		//ex. CASE myvar OF 3..5:Out.String("hi")END
-//length = ConstExpression.
-		//ex. 5+7
-//letter = "A" | "B" | ... | "Z" | "a" | "b" | ... | "z".
-		//ex. capital and small letters
-//module = MODULE ident ";" [ImportList] DeclarationSequence [BEGIN StatementSequence] END ident "." .
-		//ex. MODULE mymod; IMPORT mymodule; VAR x:INTEGER; BEGIN x:=9 END mymod .
-		//note that there is a full stop mark at the END of module identifier.
-//MulOperator = "*" | "/" | DIV | MOD | "&".
-		//ex. * | / | DIV | MOD | &
-//number = integer | real.
-		//ex. 34 | 3.4
-//PointerType = POINTER TO type.
-		//ex. TYPE x: POINTER TO myrecord;
-//ProcedureBody = DeclarationSequence [BEGIN StatementSequence] [RETURN expression] END.
-		//ex. PROCEDURE myproc(x:INTEGER):REAL; VAR y:INTEGER; BEGIN y:=1; RETURN x+y END myproc;
-//ProcedureCall = designator [ActualParameters].
-		//ex. myproc | myfunc(4,6)
-//ProcedureDeclaration = ProcedureHeading ";" ProcedureBody ident.
-		//ex. PROCEDURE myproc(x:INTEGER):REAL; VAR y:INTEGER; BEGIN y:=1; RETURN x+y END myproc;
-//ProcedureHeading = PROCEDURE identdef [FormalParameters].
-		//ex. PROCEDURE myproc*(x:INTEGER):REAL; VAR y:INTEGER; BEGIN y:=1; RETURN x+y END myproc;
-//ProcedureType = PROCEDURE [FormalParameters].
-		//ex. TYPE mp: PROCEDURE(a,b:INTEGER):INTEGER;
-//qualident = [ident "."] ident.
-		//ex. mymodule.myvar | myvar
-//real = digit {digit} "." {digit} [ScaleFactor].
-		//ex. 34.4 | 34.4E-21
-//RecordType = RECORD ["(" BaseType ")"] [FieldListSequence] END.
-		//ex. TYPE mytype = RECORD (basetype) x,y:INTEGER; z:CHAR END;
-//relation = "=" | "#" | "<" | "<=" | ">" | ">=" | IN | IS.
-		//ex. = | # | < | <= | > | >= | IN | IS
-//RepeatStatement = REPEAT StatementSequence UNTIL expression.
-		//ex. REPEAT a:=a+1 UNTIL a>10
-//ScaleFactor = "E" ["+" | "-"] digit {digit}.
-		//ex. 34.4E-21
-//selector = "." ident | "[" ExpList "]" | "^" | "(" qualident ")".
-		//ex. record.element | array[rowindex, columnindex] | recordpointer^.element (= recordpointer.element) | p(Circle).radius (here p is of type Figure)
-//set = "{" [element {"," element}] "}".
-		//ex. a set is {1, 2..5, n+1..2*k}
-//SimpleExpression = ["+" | "-"] term {AddOperator term}.
-		//ex. -3 | -3 + 4 | -3 - 4
-//statement = [assignment | ProcedureCall | IfStatement | CaseStatement | WhileStatement | RepeatStatement | ForStatement].
-		//ex. a:=1 | myproc | myproc(3) | IF a=0 THEN b:=9 END | CASE myvar OF 1: Out.String("hi") END | WHILE a>9 DO b:=1 END | REPEAT a:=a+1 UNTIL a>10 | FOR i:=3 TO 9 BY 2 DO k:=k+1 END
-//StatementSequence = statement {";" statement}.
-		//ex. a:=2;b:=6
-//string = """ {character} """ | digit {hexDigit} "X".
-		//ex. "abcd" | 3BX
-		//note that hex string starts with a digit, ends with an X.
-//term = factor {MulOperator factor}.
-		//ex. 3*4 | 5/8
-//TypeDeclaration = identdef "=" type.
-		//ex. TYPE T* = INTEGER;
-//type = qualident | ArrayType | RecordType | PointerType | ProcedureType.
-		//ex. TYPE k: mymod.mytype; | TYPE k: ARRAY 3+1,4 OF INTEGER; | TYPE mytype = RECORD (basetype) x,y:INTEGER; z:CHAR END; | TYPE x: POINTER TO myrecord; | TYPE mp: PROCEDURE(a,b:INTEGER):INTEGER;
-//VariableDeclaration = IdentList ":" type.
-		//ex. VAR x,y: INTEGER;
-//WhileStatement = WHILE expression DO StatementSequence {ELSIF expression DO StatementSequence} END.
-		//ex. WHILE a>9 DO b:=1 ELSIF a>5 DO b:=2 ELSIF a>3 DO b:=3 END
-//-----------------------
-
 //Recursive Parsing Strategy:
 //---------------------------
 //							  K -> Pr(K)
@@ -471,8 +333,9 @@ void Close(char* modid, int key, int nofent);
 //Register: value is in this register
 //RegisterIndirect: value is at address contained in this register
 
-//First and Follow set
-//--------------------
+
+//Oberon7 EBNF grammar and First & Follow sets
+//--------------------------------------------
 //Tool used: http://homepage.divms.uiowa.edu/~jones/compiler/gtools/
 //Setup instructions:
 //# sh < gtools.shar
@@ -480,6 +343,9 @@ void Close(char* modid, int key, int nofent);
 //Oberon7 EBNF grammar to input to the tool:
 //(first line denote start symbol for the grammar,
 //second line denote epsilon symbol for the grammar.)
+//[] means 0 or once; i.e. optional
+//{} means 0 or more; i.e. optional but repetatable
+//letter and digit has not been defined here due to its intuitiveness
 
 /*
 > module
@@ -546,64 +412,135 @@ VariableDeclaration = IdentList ':' type
 WhileStatement = WHILE expression DO StatementSequence { ELSIF expression DO StatementSequence } END
 */
 
-//Commands to get First and Follow set:
+//Commands to get First & Follow set:
 //# ./gdeebnf < my.ebnf > my.bnf_e
 //# ./gdeebnf < my.ebnf | ./gdeempty > my.bnf
 //# ./gdeebnf < my.ebnf | ./gdeempty | ./gstartfollow > my.sf
 //First, input EBNF is converted by gdeebnf to BNF grammar with epsilon.
 //Then, epsilon is removed from the BNF grammar by gdeempty.
-//Then, First and Follow set is generated by gstartfollow.
+//Then, First & Follow set is generated by gstartfollow.
 
-/*
-module ::= MODULE ident ';' module-a DeclarationSequence module-b END ident '.'
-        |  MODULE ident ';' module-a DeclarationSequence END ident '.'
-        |  MODULE ident ';' module-a END ident '.'
-        |  MODULE ident ';' END ident '.'
-        |  MODULE ident ';' DeclarationSequence END ident '.'
-        |  MODULE ident ';' module-a module-b END ident '.'
-        |  MODULE ident ';' module-b END ident '.'
-        |  MODULE ident ';' DeclarationSequence module-b END ident '.'
-# start set:   MODULE
+#ifdef 0
 
-ident ::= letter ident-a
-       |  letter
-# start set:   letter
-# follow set:  ';' '.' ':=' '*' ',' ':' '=' '(' '[' '^' ')' '/' DIV MOD '&' '+'
-#              '-' OR '#' '<' '<=' '>' '>=' IN IS '..' THEN OF DO TO BY ELSIF
-#              END ELSE UNTIL RETURN '}' ']' '|'
+//Below we list
+//EBNF grammar,
+//example,
+//equivalent epsilon-less BNF grammar and
+//First & Follow set.
 
-ident-a ::= letter ident-a
-         |  letter
-         |  digit ident-a
-         |  digit
-# start set:   letter digit
-# follow set:  ';' '.' ':=' '*' ',' ':' '=' '(' '[' '^' ')' '/' DIV MOD '&' '+'
-#              '-' OR '#' '<' '<=' '>' '>=' IN IS '..' THEN OF DO TO BY ELSIF
-#              END ELSE UNTIL RETURN '}' ']' '|'
+# terminals:   MODULE ';' END '.' letter digit IMPORT ':=' ',' CONST '=' '*' '+'
+#              '-' NIL TRUE FALSE '(' ')' '~' 'H' 'A' 'B' 'C' 'D' 'E' 'F' '"'
+#              'X' '{' '}' '..' '[' ']' '^' '/' DIV MOD '&' OR '#' '<' '<=' '>'
+#              '>=' IN IS TYPE ARRAY OF RECORD ':' POINTER TO PROCEDURE VAR
+#              BEGIN IF THEN ELSIF ELSE CASE '|' WHILE DO REPEAT UNTIL FOR BY
+#              RETURN
 
-module-a ::= ImportList
-# start set:   IMPORT
-# follow set:  CONST TYPE VAR PROCEDURE END BEGIN
+//ActualParameters = '(' [ ExpList ] ')'
+		//ex. myproc(4,6)
+ActualParameters ::= '(' ActualParameters-a ')'
+                  |  '(' ')'
+# start set:   '('
+# follow set:  '*' '/' DIV MOD '&' '+' '-' OR '=' '#' '<' '<=' '>' '>=' IN IS
+#              ')' '..' ',' THEN OF DO TO BY ';' ELSIF END ELSE UNTIL RETURN '}'
+#              ']' '|'
 
-ImportList ::= IMPORT import ImportList-a ';'
-            |  IMPORT import ';'
-# start set:   IMPORT
-# follow set:  CONST TYPE VAR PROCEDURE END BEGIN
+ActualParameters-a ::= ExpList
+# start set:   '+' '-' digit NIL TRUE FALSE '(' '~' '"' '{' letter
+# follow set:  ')'
 
-import ::= ident import-a
-        |  ident
-# start set:   letter
-# follow set:  ',' ';'
+//AddOperator = '+' | '-' | OR
+		//ex. + | - | OR
+AddOperator ::= '+'
+             |  '-'
+             |  OR
+# start set:   '+' '-' OR
+# follow set:  digit NIL TRUE FALSE '(' '~' '"' '{' letter
 
-import-a ::= ':=' ident
-# start set:   ':='
-# follow set:  ',' ';'
+//ArrayType = ARRAY length { ',' length } OF type
+		//ex. TYPE k: ARRAY 3+1,4 OF INTEGER;
+ArrayType ::= ARRAY length ArrayType-a OF type
+           |  ARRAY length OF type
+# start set:   ARRAY
+# follow set:  ';' END
 
-ImportList-a ::= ',' import ImportList-a
-              |  ',' import
+ArrayType-a ::= ',' length ArrayType-a
+             |  ',' length
 # start set:   ','
+# follow set:  OF
+
+//assignment = designator ':=' expression
+		//ex. a := 8+9;
+assignment ::= designator ':=' expression
+# start set:   letter
+# follow set:  ';' ELSIF END ELSE UNTIL RETURN '|'
+
+//BaseType = qualident
+		//ex. TYPE mytype = POINTER TO mymodule.myrecord;
+BaseType ::= qualident
+# start set:   letter
+# follow set:  ')'
+
+//case = [ CaseLabelList ':' StatementSequence ]
+		//ex. CASE myvar OF 1,3:Out.String("hi");Out.String("bye")END
+case ::= case-a
+# start set:   digit '"' letter
+# follow set:  '|' END
+
+case-a ::= CaseLabelList ':' StatementSequence
+        |  CaseLabelList ':'
+# start set:   digit '"' letter
+# follow set:  '|' END
+
+//CaseLabelList = LabelRange { ',' LabelRange }
+		//ex. CASE myvar OF 1,3..5:Out.String("hi");Out.String("bye") | 6:Out.String("bye");Out.String("hi") END
+CaseLabelList ::= LabelRange CaseLabelList-a
+               |  LabelRange
+# start set:   digit '"' letter
+# follow set:  ':'
+
+CaseLabelList-a ::= ',' LabelRange CaseLabelList-a
+                 |  ',' LabelRange
+# start set:   ','
+# follow set:  ':'
+
+//CaseStatement = CASE expression OF case { '|' case } END
+		//ex. CASE myvar OF 1:Out.String("hi");Out.String("bye") | 2:Out.String("bye");Out.String("hi") END
+CaseStatement ::= CASE expression OF case CaseStatement-a END
+               |  CASE expression OF case END
+               |  CASE expression OF END
+               |  CASE expression OF CaseStatement-a END
+# start set:   CASE
+# follow set:  ';' ELSIF END ELSE UNTIL RETURN '|'
+
+CaseStatement-a ::= '|' case CaseStatement-a
+                 |  '|' case
+                 |  '|'
+                 |  '|' CaseStatement-a
+# start set:   '|'
+# follow set:  END
+
+//character = letter | digit
+		//ex. A, 6
+character ::= letter
+           |  digit
+# start set:   letter digit
+# follow set:  letter digit '"'
+
+//ConstDeclaration = identdef '=' ConstExpression
+		//ex. CONST PI* = 3.142;
+ConstDeclaration ::= identdef '=' ConstExpression
+# start set:   letter
 # follow set:  ';'
 
+//ConstExpression = expression
+		//ex. 5+7
+ConstExpression ::= expression
+# start set:   '+' '-' digit NIL TRUE FALSE '(' '~' '"' '{' letter
+# follow set:  ';' ',' OF DO
+
+//DeclarationSequence = [ CONST { ConstDeclaration ';' } ] [ TYPE { TypeDeclaration ';' } ] [ VAR { VariableDeclaration ';' } ] { ProcedureDeclaration ';' }
+		//ex. CONST PI* = 3.142; TYPE T* = INTEGER; VAR x: INTEGER; PROCEDURE myproc(x:INTEGER):REAL; VAR y:INTEGER; BEGIN y:=1; RETURN x+y END myproc;
+		//note that there is no semicolon at the end of RETURN
 DeclarationSequence ::= DeclarationSequence-a DeclarationSequence-b
                         DeclarationSequence-c DeclarationSequence-d
                      |  DeclarationSequence-a DeclarationSequence-b
@@ -637,48 +574,91 @@ DeclarationSequence-a-a ::= ConstDeclaration ';' DeclarationSequence-a-a
 # start set:   letter
 # follow set:  TYPE VAR PROCEDURE BEGIN END RETURN
 
-ConstDeclaration ::= identdef '=' ConstExpression
+DeclarationSequence-b ::= TYPE DeclarationSequence-b-a
+                       |  TYPE
+# start set:   TYPE
+# follow set:  VAR PROCEDURE BEGIN END RETURN
+
+DeclarationSequence-b-a ::= TypeDeclaration ';' DeclarationSequence-b-a
+                         |  TypeDeclaration ';'
 # start set:   letter
-# follow set:  ';'
+# follow set:  VAR PROCEDURE BEGIN END RETURN
 
-identdef ::= ident identdef-a
-          |  ident
+DeclarationSequence-c ::= VAR DeclarationSequence-c-a
+                       |  VAR
+# start set:   VAR
+# follow set:  PROCEDURE BEGIN END RETURN
+
+DeclarationSequence-c-a ::= VariableDeclaration ';' DeclarationSequence-c-a
+                         |  VariableDeclaration ';'
 # start set:   letter
-# follow set:  '=' ',' '(' ':' ';'
+# follow set:  PROCEDURE BEGIN END RETURN
 
-identdef-a ::= '*'
-# start set:   '*'
-# follow set:  '=' ',' '(' ':' ';'
+DeclarationSequence-d ::= ProcedureDeclaration ';' DeclarationSequence-d
+                       |  ProcedureDeclaration ';'
+# start set:   PROCEDURE
+# follow set:  BEGIN END RETURN
 
-ConstExpression ::= expression
+//designator = qualident { selector }
+		//ex. myvar | mymodule.myvar | mymodule.myvar[i]
+		//see selector for more exmples
+designator ::= qualident designator-a
+            |  qualident
+# start set:   letter
+# follow set:  '(' ':=' '*' '/' DIV MOD '&' '+' '-' OR '=' '#' '<' '<=' '>' '>='
+#              IN IS ')' '..' ',' THEN OF DO TO BY ';' ELSIF END ELSE UNTIL
+#              RETURN '}' ']' '|'
+
+designator-a ::= selector designator-a
+              |  selector
+# start set:   '.' '(' '[' '^'
+# follow set:  '(' ':=' '*' '/' DIV MOD '&' '+' '-' OR '=' '#' '<' '<=' '>' '>='
+#              IN IS ')' '..' ',' THEN OF DO TO BY ';' ELSIF END ELSE UNTIL
+#              RETURN '}' ']' '|'
+
+//digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9".
+		//digits 0 to 9
+		//remember that we hadn't defined it in Oberon7 grammar
+		//hence its First & Follow set has not been generated.
+		
+//element = expression [ '..' expression ]
+		//ex. see second element of the set {1, 2..5, n+1..2*k}
+element ::= expression element-a
+         |  expression
 # start set:   '+' '-' digit NIL TRUE FALSE '(' '~' '"' '{' letter
-# follow set:  ';' ',' OF DO
+# follow set:  ',' '}'
 
+element-a ::= '..' expression
+# start set:   '..'
+# follow set:  ',' '}'
+
+//ExpList = expression { ',' expression }
+		//ex. multiple expressions separated by comma as in 5,n+2,9
+ExpList ::= expression ExpList-a
+         |  expression
+# start set:   '+' '-' digit NIL TRUE FALSE '(' '~' '"' '{' letter
+# follow set:  ']' ')'
+
+ExpList-a ::= ',' expression ExpList-a
+           |  ',' expression
+# start set:   ','
+# follow set:  ']' ')'
+
+//expression = SimpleExpression [ relation SimpleExpression ]
+		//ex. -6 < k
 expression ::= SimpleExpression expression-a
             |  SimpleExpression
 # start set:   '+' '-' digit NIL TRUE FALSE '(' '~' '"' '{' letter
 # follow set:  ')' '..' ',' THEN OF DO TO BY ';' '}' ']' END ELSIF ELSE UNTIL
 #              RETURN '|'
 
-SimpleExpression ::= SimpleExpression-a term SimpleExpression-b
-                  |  SimpleExpression-a term
-                  |  term
-                  |  term SimpleExpression-b
-# start set:   '+' '-' digit NIL TRUE FALSE '(' '~' '"' '{' letter
-# follow set:  '=' '#' '<' '<=' '>' '>=' IN IS ')' '..' ',' THEN OF DO TO BY ';'
-#              '}' ']' END ELSIF ELSE UNTIL RETURN '|'
+expression-a ::= relation SimpleExpression
+# start set:   '=' '#' '<' '<=' '>' '>=' IN IS
+# follow set:  ')' '..' ',' THEN OF DO TO BY ';' '}' ']' END ELSIF ELSE UNTIL
+#              RETURN '|'
 
-SimpleExpression-a ::= '+'
-                    |  '-'
-# start set:   '+' '-'
-# follow set:  digit NIL TRUE FALSE '(' '~' '"' '{' letter
-
-term ::= factor term-a
-      |  factor
-# start set:   digit NIL TRUE FALSE '(' '~' '"' '{' letter
-# follow set:  '+' '-' OR '=' '#' '<' '<=' '>' '>=' IN IS ')' '..' ',' THEN OF
-#              DO TO BY ';' '}' ']' END ELSIF ELSE UNTIL RETURN '|'
-
+//factor = number | string | NIL | TRUE | FALSE | set | designator [ ActualParameters ] | '(' expression ')' | '~' factor
+		//ex. 3 | "hi" | {1, 2} | myvar | myproc(9,6) | (6*7) | ~mybool
 factor ::= number
         |  string
         |  NIL
@@ -694,13 +674,207 @@ factor ::= number
 #              ')' '..' ',' THEN OF DO TO BY ';' '}' ']' END ELSIF ELSE UNTIL
 #              RETURN '|'
 
-number ::= integer
-        |  real
-# start set:   digit
+factor-a ::= ActualParameters
+# start set:   '('
 # follow set:  '*' '/' DIV MOD '&' '+' '-' OR '=' '#' '<' '<=' '>' '>=' IN IS
 #              ')' '..' ',' THEN OF DO TO BY ';' '}' ']' END ELSIF ELSE UNTIL
 #              RETURN '|'
 
+//FieldList = IdentList ':' type
+		//ex. x,y,z:INTEGER
+FieldList ::= IdentList ':' type
+# start set:   letter
+# follow set:  ';' END
+
+//FieldListSequence = FieldList { ';' FieldList }
+		//ex. x,y:INTEGER;z:REAL
+FieldListSequence ::= FieldList FieldListSequence-a
+                   |  FieldList
+# start set:   letter
+# follow set:  END
+
+FieldListSequence-a ::= ';' FieldList FieldListSequence-a
+                     |  ';' FieldList
+# start set:   ';'
+# follow set:  END
+
+//FormalParameters = '(' [ FPSection { ';' FPSection } ] ')' [ ':' qualident ]
+		//ex. PROCEDURE myproc(VAR x,y:INTEGER; z:CHAR):REAL;
+FormalParameters ::= '(' FormalParameters-a ')' FormalParameters-b
+                  |  '(' FormalParameters-a ')'
+                  |  '(' ')'
+                  |  '(' ')' FormalParameters-b
+# start set:   '('
+# follow set:  ';' ')' END
+
+FormalParameters-a ::= FPSection FormalParameters-a-a
+                    |  FPSection
+# start set:   letter VAR
+# follow set:  ')'
+
+FormalParameters-a-a ::= ';' FPSection FormalParameters-a-a
+                      |  ';' FPSection
+# start set:   ';'
+# follow set:  ')'
+
+FormalParameters-b ::= ':' qualident
+# start set:   ':'
+# follow set:  ';' ')' END
+
+//FormalType = { ARRAY OF } qualident | ProcedureType
+		//ex. PROCEDURE myproc(VAR x,y:INTEGER):REAL;
+		//ex. PROCEDURE myproc(x,y: ARRAY OF module.type):REAL;
+		//ex. PROCEDURE myproc(VAR x,y: PROCEDURE):REAL;
+		//ex. PROCEDURE myproc(x,y: PROCEDURE(a,b:INTEGER):INTEGER):REAL;
+FormalType ::= FormalType-a qualident
+            |  qualident
+            |  ProcedureType
+# start set:   ARRAY letter PROCEDURE
+# follow set:  ';' ')'
+
+FormalType-a ::= ARRAY OF FormalType-a
+              |  ARRAY OF
+# start set:   ARRAY
+# follow set:  letter
+
+//ForStatement = FOR ident ':=' expression TO expression [ BY ConstExpression ] DO StatementSequence END
+		//ex. FOR i:=3 TO 9 BY 2 DO k:=k+1 END
+ForStatement ::= FOR ident ':=' expression TO expression ForStatement-a DO
+                 StatementSequence END
+              |  FOR ident ':=' expression TO expression ForStatement-a DO END
+              |  FOR ident ':=' expression TO expression DO END
+              |  FOR ident ':=' expression TO expression DO StatementSequence
+                 END
+# start set:   FOR
+# follow set:  ';' ELSIF END ELSE UNTIL RETURN '|'
+
+ForStatement-a ::= BY ConstExpression
+# start set:   BY
+# follow set:  DO
+
+//FPSection = [ VAR ] ident { ',' ident } ':' FormalType
+		//ex. PROCEDURE myproc(VAR x,y:INTEGER):REAL;
+FPSection ::= FPSection-a ident FPSection-b ':' FormalType
+           |  FPSection-a ident ':' FormalType
+           |  ident ':' FormalType
+           |  ident FPSection-b ':' FormalType
+# start set:   letter VAR
+# follow set:  ';' ')'
+
+FPSection-a ::= VAR
+# start set:   VAR
+# follow set:  letter
+
+FPSection-b ::= ',' ident FPSection-b
+             |  ',' ident
+# start set:   ','
+# follow set:  ':'
+
+//hexDigit = digit | 'A' | 'B' | 'C' | 'D' | 'E' | 'F'
+		//ex. 3BE4
+hexDigit ::= digit
+          |  'A'
+          |  'B'
+          |  'C'
+          |  'D'
+          |  'E'
+          |  'F'
+# start set:   digit 'A' 'B' 'C' 'D' 'E' 'F'
+# follow set:  digit 'A' 'B' 'C' 'D' 'E' 'F' 'H' 'X'
+
+//identdef = ident [ '*' ]
+		//ex. VAR k*:INTEGER;
+identdef ::= ident identdef-a
+          |  ident
+# start set:   letter
+# follow set:  '=' ',' '(' ':' ';'
+
+identdef-a ::= '*'
+# start set:   '*'
+# follow set:  '=' ',' '(' ':' ';'
+
+//ident = letter { letter | digit }
+		//ex. class5mark
+ident ::= letter ident-a
+       |  letter
+# start set:   letter
+# follow set:  ';' '.' ':=' '*' ',' ':' '=' '(' '[' '^' ')' '/' DIV MOD '&' '+'
+#              '-' OR '#' '<' '<=' '>' '>=' IN IS '..' THEN OF DO TO BY ELSIF
+#              END ELSE UNTIL RETURN '}' ']' '|'
+
+ident-a ::= letter ident-a
+         |  letter
+         |  digit ident-a
+         |  digit
+# start set:   letter digit
+# follow set:  ';' '.' ':=' '*' ',' ':' '=' '(' '[' '^' ')' '/' DIV MOD '&' '+'
+#              '-' OR '#' '<' '<=' '>' '>=' IN IS '..' THEN OF DO TO BY ELSIF
+#              END ELSE UNTIL RETURN '}' ']' '|'
+
+//IdentList = identdef { ',' identdef }
+		//ex. VAR x*, y* : INTEGER;
+IdentList ::= identdef IdentList-a
+           |  identdef
+# start set:   letter
+# follow set:  ':'
+
+IdentList-a ::= ',' identdef IdentList-a
+             |  ',' identdef
+# start set:   ','
+# follow set:  ':'
+
+//IfStatement = IF expression THEN StatementSequence { ELSIF expression THEN StatementSequence } [ ELSE StatementSequence ] END
+		//ex. IF a=0 THEN b:=9 ELSIF a=1 THEN b:=8 ELSIF a=2 THEN b:=7 ELSE b:=6 END
+IfStatement ::= IF expression THEN StatementSequence IfStatement-a IfStatement-b
+                END
+             |  IF expression THEN StatementSequence IfStatement-a END
+             |  IF expression THEN StatementSequence END
+             |  IF expression THEN END
+             |  IF expression THEN IfStatement-a END
+             |  IF expression THEN StatementSequence IfStatement-b END
+             |  IF expression THEN IfStatement-b END
+             |  IF expression THEN IfStatement-a IfStatement-b END
+# start set:   IF
+# follow set:  ';' ELSIF END ELSE UNTIL RETURN '|'
+
+IfStatement-a ::= ELSIF expression THEN StatementSequence IfStatement-a
+               |  ELSIF expression THEN StatementSequence
+               |  ELSIF expression THEN
+               |  ELSIF expression THEN IfStatement-a
+# start set:   ELSIF
+# follow set:  ELSE END
+
+IfStatement-b ::= ELSE StatementSequence
+               |  ELSE
+# start set:   ELSE
+# follow set:  END
+
+//import = ident [ ':=' ident ]
+		//ex. IMPORT mymodule := mm;
+import ::= ident import-a
+        |  ident
+# start set:   letter
+# follow set:  ',' ';'
+
+import-a ::= ':=' ident
+# start set:   ':='
+# follow set:  ',' ';'
+
+//ImportList = IMPORT import { ',' import } ';'
+		//ex. IMPORT mymodule1, mymodule2;
+ImportList ::= IMPORT import ImportList-a ';'
+            |  IMPORT import ';'
+# start set:   IMPORT
+# follow set:  CONST TYPE VAR PROCEDURE END BEGIN
+
+ImportList-a ::= ',' import ImportList-a
+              |  ',' import
+# start set:   ','
+# follow set:  ';'
+
+//integer = digit { digit } | digit { hexDigit } 'H'
+		//ex. 32 | 0BH | 5BH
+		//note that hexadecimal numbers start with a digit, ends with an H.
 integer ::= digit integer-a
          |  digit
          |  digit integer-b 'H'
@@ -722,16 +896,160 @@ integer-b ::= hexDigit integer-b
 # start set:   digit 'A' 'B' 'C' 'D' 'E' 'F'
 # follow set:  'H'
 
-hexDigit ::= digit
-          |  'A'
-          |  'B'
-          |  'C'
-          |  'D'
-          |  'E'
-          |  'F'
-# start set:   digit 'A' 'B' 'C' 'D' 'E' 'F'
-# follow set:  digit 'A' 'B' 'C' 'D' 'E' 'F' 'H' 'X'
+//label = integer | string | qualident
+		//ex. 43 | "hi" | myrecord.myelement
+		//ex. CASE myvar OF "hi":Out.String("hi")END
+label ::= integer
+       |  string
+       |  qualident
+# start set:   digit '"' letter
+# follow set:  '..' ',' ':'
 
+//LabelRange = label [ '..' label ]
+		//ex. CASE myvar OF 3..5:Out.String("hi")END
+LabelRange ::= label LabelRange-a
+            |  label
+# start set:   digit '"' letter
+# follow set:  ',' ':'
+
+LabelRange-a ::= '..' label
+# start set:   '..'
+# follow set:  ',' ':'
+
+//length = ConstExpression
+		//ex. 5+7
+length ::= ConstExpression
+# start set:   '+' '-' digit NIL TRUE FALSE '(' '~' '"' '{' letter
+# follow set:  ',' OF
+
+//letter = "A" | "B" | ... | "Z" | "a" | "b" | ... | "z".
+		//ex. capital and small letters
+		//remember that we hadn't defined it in Oberon7 grammar
+		//hence its First & Follow set has not been generated.
+
+//module = MODULE ident ';' [ ImportList ] DeclarationSequence [ BEGIN StatementSequence ] END ident '.'
+		//ex. MODULE mymod; IMPORT mymodule; VAR x:INTEGER; BEGIN x:=9 END mymod .
+		//note that there is a full stop mark at the END of module identifier.
+module ::= MODULE ident ';' module-a DeclarationSequence module-b END ident '.'
+        |  MODULE ident ';' module-a DeclarationSequence END ident '.'
+        |  MODULE ident ';' module-a END ident '.'
+        |  MODULE ident ';' END ident '.'
+        |  MODULE ident ';' DeclarationSequence END ident '.'
+        |  MODULE ident ';' module-a module-b END ident '.'
+        |  MODULE ident ';' module-b END ident '.'
+        |  MODULE ident ';' DeclarationSequence module-b END ident '.'
+# start set:   MODULE
+
+module-a ::= ImportList
+# start set:   IMPORT
+# follow set:  CONST TYPE VAR PROCEDURE END BEGIN
+
+module-b ::= BEGIN StatementSequence
+          |  BEGIN
+# start set:   BEGIN
+# follow set:  END
+
+//MulOperator = '*' | '/' | DIV | MOD | '&'
+		//ex. * | / | DIV | MOD | &
+MulOperator ::= '*'
+             |  '/'
+             |  DIV
+             |  MOD
+             |  '&'
+# start set:   '*' '/' DIV MOD '&'
+# follow set:  digit NIL TRUE FALSE '(' '~' '"' '{' letter
+
+//number = integer | real
+		//ex. 34 | 3.4
+number ::= integer
+        |  real
+# start set:   digit
+# follow set:  '*' '/' DIV MOD '&' '+' '-' OR '=' '#' '<' '<=' '>' '>=' IN IS
+#              ')' '..' ',' THEN OF DO TO BY ';' '}' ']' END ELSIF ELSE UNTIL
+#              RETURN '|'
+
+//PointerType = POINTER TO type
+		//ex. TYPE x: POINTER TO myrecord;
+PointerType ::= POINTER TO type
+# start set:   POINTER
+# follow set:  ';' END
+
+//ProcedureBody = DeclarationSequence [ BEGIN StatementSequence ] [ RETURN expression ] END
+		//ex. PROCEDURE myproc(x:INTEGER):REAL; VAR y:INTEGER; BEGIN y:=1; RETURN x+y END myproc;
+ProcedureBody ::= DeclarationSequence ProcedureBody-a ProcedureBody-b END
+               |  DeclarationSequence ProcedureBody-a END
+               |  DeclarationSequence END
+               |  END
+               |  ProcedureBody-a END
+               |  DeclarationSequence ProcedureBody-b END
+               |  ProcedureBody-b END
+               |  ProcedureBody-a ProcedureBody-b END
+# start set:   END CONST TYPE VAR BEGIN RETURN PROCEDURE
+# follow set:  letter
+
+ProcedureBody-a ::= BEGIN StatementSequence
+                 |  BEGIN
+# start set:   BEGIN
+# follow set:  RETURN END
+
+ProcedureBody-b ::= RETURN expression
+# start set:   RETURN
+# follow set:  END
+
+//ProcedureCall = designator [ ActualParameters ]
+		//ex. myproc | myfunc(4,6)
+ProcedureCall ::= designator ProcedureCall-a
+               |  designator
+# start set:   letter
+# follow set:  ';' ELSIF END ELSE UNTIL RETURN '|'
+
+ProcedureCall-a ::= ActualParameters
+# start set:   '('
+# follow set:  ';' ELSIF END ELSE UNTIL RETURN '|'
+
+//ProcedureDeclaration = ProcedureHeading ';' ProcedureBody ident
+		//ex. PROCEDURE myproc(x:INTEGER):REAL; VAR y:INTEGER; BEGIN y:=1; RETURN x+y END myproc;
+ProcedureDeclaration ::= ProcedureHeading ';' ProcedureBody ident
+# start set:   PROCEDURE
+# follow set:  ';'
+
+//ProcedureHeading = PROCEDURE identdef [ FormalParameters ]
+		//ex. PROCEDURE myproc*(x:INTEGER):REAL; VAR y:INTEGER; BEGIN y:=1; RETURN x+y END myproc;
+ProcedureHeading ::= PROCEDURE identdef ProcedureHeading-a
+                  |  PROCEDURE identdef
+# start set:   PROCEDURE
+# follow set:  ';'
+
+ProcedureHeading-a ::= FormalParameters
+# start set:   '('
+# follow set:  ';'
+
+//ProcedureType = PROCEDURE [ FormalParameters ]
+		//ex. TYPE mp: PROCEDURE(a,b:INTEGER):INTEGER;
+ProcedureType ::= PROCEDURE ProcedureType-a
+               |  PROCEDURE
+# start set:   PROCEDURE
+# follow set:  ';' ')' END
+
+ProcedureType-a ::= FormalParameters
+# start set:   '('
+# follow set:  ';' ')' END
+
+//qualident = [ ident '.' ] ident
+		//ex. mymodule.myvar | myvar
+qualident ::= qualident-a ident
+           |  ident
+# start set:   letter
+# follow set:  '.' '(' '[' '^' ')' ':=' '*' '/' DIV MOD '&' '+' '-' OR '=' '#'
+#              '<' '<=' '>' '>=' IN IS '..' ',' THEN OF DO TO BY ';' ':' ELSIF
+#              END ELSE UNTIL RETURN '}' ']' '|'
+
+qualident-a ::= ident '.'
+# start set:   letter
+# follow set:  letter
+
+//real = digit { digit } '.' { digit } [ ScaleFactor ]
+		//ex. 34.4 | 34.4E-21
 real ::= digit real-a '.' real-b real-c
       |  digit real-a '.' real-b
       |  digit real-a '.'
@@ -763,6 +1081,45 @@ real-c ::= ScaleFactor
 #              ')' '..' ',' THEN OF DO TO BY ';' '}' ']' END ELSIF ELSE UNTIL
 #              RETURN '|'
 
+//RecordType = RECORD [ '(' BaseType ')' ] [ FieldListSequence ] END
+		//ex. TYPE mytype = RECORD (basetype) x,y:INTEGER; z:CHAR END;
+RecordType ::= RECORD RecordType-a RecordType-b END
+            |  RECORD RecordType-a END
+            |  RECORD END
+            |  RECORD RecordType-b END
+# start set:   RECORD
+# follow set:  ';' END
+
+RecordType-a ::= '(' BaseType ')'
+# start set:   '('
+# follow set:  letter END
+
+RecordType-b ::= FieldListSequence
+# start set:   letter
+# follow set:  END
+
+//relation = '=' | '#' | '<' | '<=' | '>' | '>=' | IN | IS
+		//ex. = | # | < | <= | > | >= | IN | IS
+relation ::= '='
+          |  '#'
+          |  '<'
+          |  '<='
+          |  '>'
+          |  '>='
+          |  IN
+          |  IS
+# start set:   '=' '#' '<' '<=' '>' '>=' IN IS
+# follow set:  '+' '-' digit NIL TRUE FALSE '(' '~' '"' '{' letter
+
+//RepeatStatement = REPEAT StatementSequence UNTIL expression
+		//ex. REPEAT a:=a+1 UNTIL a>10
+RepeatStatement ::= REPEAT StatementSequence UNTIL expression
+                 |  REPEAT UNTIL expression
+# start set:   REPEAT
+# follow set:  ';' ELSIF END ELSE UNTIL RETURN '|'
+
+//ScaleFactor = 'E' [ '+' | '-' ] digit { digit }
+		//ex. 34.4E-21
 ScaleFactor ::= 'E' ScaleFactor-a digit ScaleFactor-b
              |  'E' ScaleFactor-a digit
              |  'E' digit
@@ -784,30 +1141,19 @@ ScaleFactor-b ::= digit ScaleFactor-b
 #              ')' '..' ',' THEN OF DO TO BY ';' '}' ']' END ELSIF ELSE UNTIL
 #              RETURN '|'
 
-string ::= '"' string-a '"'
-        |  '"' '"'
-        |  digit string-b 'X'
-        |  digit 'X'
-# start set:   digit '"'
-# follow set:  '*' '/' DIV MOD '&' '+' '-' OR '=' '#' '<' '<=' '>' '>=' IN IS
-#              ')' '..' ',' THEN OF DO TO BY ';' ':' '}' ']' END ELSIF ELSE
-#              UNTIL RETURN '|'
+//selector = '.' ident | '[' ExpList ']' | '^' | '(' qualident ')'
+		//ex. record.element | array[rowindex, columnindex] | recordpointer^.element (= recordpointer.element) | p(Circle).radius (here p is of type Figure)
+selector ::= '.' ident
+          |  '[' ExpList ']'
+          |  '^'
+          |  '(' qualident ')'
+# start set:   '.' '(' '[' '^'
+# follow set:  '.' '(' '[' '^' ':=' '*' '/' DIV MOD '&' '+' '-' OR '=' '#' '<'
+#              '<=' '>' '>=' IN IS ')' '..' ',' THEN OF DO TO BY ';' ELSIF END
+#              ELSE UNTIL RETURN '}' ']' '|'
 
-string-a ::= character string-a
-          |  character
-# start set:   letter digit
-# follow set:  '"'
-
-character ::= letter
-           |  digit
-# start set:   letter digit
-# follow set:  letter digit '"'
-
-string-b ::= hexDigit string-b
-          |  hexDigit
-# start set:   digit 'A' 'B' 'C' 'D' 'E' 'F'
-# follow set:  'X'
-
+//set = '{' [ element { ',' element } ] '}'
+		//ex. a set is {1, 2..5, n+1..2*k}
 set ::= '{' set-a '}'
      |  '{' '}'
 # start set:   '{'
@@ -820,93 +1166,24 @@ set-a ::= element set-a-a
 # start set:   '+' '-' digit NIL TRUE FALSE '(' '~' '"' '{' letter
 # follow set:  '}'
 
-element ::= expression element-a
-         |  expression
-# start set:   '+' '-' digit NIL TRUE FALSE '(' '~' '"' '{' letter
-# follow set:  ',' '}'
-
-element-a ::= '..' expression
-# start set:   '..'
-# follow set:  ',' '}'
-
 set-a-a ::= ',' element set-a-a
          |  ',' element
 # start set:   ','
 # follow set:  '}'
 
-designator ::= qualident designator-a
-            |  qualident
-# start set:   letter
-# follow set:  '(' ':=' '*' '/' DIV MOD '&' '+' '-' OR '=' '#' '<' '<=' '>' '>='
-#              IN IS ')' '..' ',' THEN OF DO TO BY ';' ELSIF END ELSE UNTIL
-#              RETURN '}' ']' '|'
-
-qualident ::= qualident-a ident
-           |  ident
-# start set:   letter
-# follow set:  '.' '(' '[' '^' ')' ':=' '*' '/' DIV MOD '&' '+' '-' OR '=' '#'
-#              '<' '<=' '>' '>=' IN IS '..' ',' THEN OF DO TO BY ';' ':' ELSIF
-#              END ELSE UNTIL RETURN '}' ']' '|'
-
-qualident-a ::= ident '.'
-# start set:   letter
-# follow set:  letter
-
-designator-a ::= selector designator-a
-              |  selector
-# start set:   '.' '(' '[' '^'
-# follow set:  '(' ':=' '*' '/' DIV MOD '&' '+' '-' OR '=' '#' '<' '<=' '>' '>='
-#              IN IS ')' '..' ',' THEN OF DO TO BY ';' ELSIF END ELSE UNTIL
-#              RETURN '}' ']' '|'
-
-selector ::= '.' ident
-          |  '[' ExpList ']'
-          |  '^'
-          |  '(' qualident ')'
-# start set:   '.' '(' '[' '^'
-# follow set:  '.' '(' '[' '^' ':=' '*' '/' DIV MOD '&' '+' '-' OR '=' '#' '<'
-#              '<=' '>' '>=' IN IS ')' '..' ',' THEN OF DO TO BY ';' ELSIF END
-#              ELSE UNTIL RETURN '}' ']' '|'
-
-ExpList ::= expression ExpList-a
-         |  expression
+//SimpleExpression = [ '+' | '-' ] term { AddOperator term }
+		//ex. -3 | -3 + 4 | -3 - 4
+SimpleExpression ::= SimpleExpression-a term SimpleExpression-b
+                  |  SimpleExpression-a term
+                  |  term
+                  |  term SimpleExpression-b
 # start set:   '+' '-' digit NIL TRUE FALSE '(' '~' '"' '{' letter
-# follow set:  ']' ')'
+# follow set:  '=' '#' '<' '<=' '>' '>=' IN IS ')' '..' ',' THEN OF DO TO BY ';'
+#              '}' ']' END ELSIF ELSE UNTIL RETURN '|'
 
-ExpList-a ::= ',' expression ExpList-a
-           |  ',' expression
-# start set:   ','
-# follow set:  ']' ')'
-
-factor-a ::= ActualParameters
-# start set:   '('
-# follow set:  '*' '/' DIV MOD '&' '+' '-' OR '=' '#' '<' '<=' '>' '>=' IN IS
-#              ')' '..' ',' THEN OF DO TO BY ';' '}' ']' END ELSIF ELSE UNTIL
-#              RETURN '|'
-
-ActualParameters ::= '(' ActualParameters-a ')'
-                  |  '(' ')'
-# start set:   '('
-# follow set:  '*' '/' DIV MOD '&' '+' '-' OR '=' '#' '<' '<=' '>' '>=' IN IS
-#              ')' '..' ',' THEN OF DO TO BY ';' ELSIF END ELSE UNTIL RETURN '}'
-#              ']' '|'
-
-ActualParameters-a ::= ExpList
-# start set:   '+' '-' digit NIL TRUE FALSE '(' '~' '"' '{' letter
-# follow set:  ')'
-
-term-a ::= MulOperator factor term-a
-        |  MulOperator factor
-# start set:   '*' '/' DIV MOD '&'
-# follow set:  '+' '-' OR '=' '#' '<' '<=' '>' '>=' IN IS ')' '..' ',' THEN OF
-#              DO TO BY ';' '}' ']' END ELSIF ELSE UNTIL RETURN '|'
-
-MulOperator ::= '*'
-             |  '/'
-             |  DIV
-             |  MOD
-             |  '&'
-# start set:   '*' '/' DIV MOD '&'
+SimpleExpression-a ::= '+'
+                    |  '-'
+# start set:   '+' '-'
 # follow set:  digit NIL TRUE FALSE '(' '~' '"' '{' letter
 
 SimpleExpression-b ::= AddOperator term SimpleExpression-b
@@ -915,222 +1192,8 @@ SimpleExpression-b ::= AddOperator term SimpleExpression-b
 # follow set:  '=' '#' '<' '<=' '>' '>=' IN IS ')' '..' ',' THEN OF DO TO BY ';'
 #              '}' ']' END ELSIF ELSE UNTIL RETURN '|'
 
-AddOperator ::= '+'
-             |  '-'
-             |  OR
-# start set:   '+' '-' OR
-# follow set:  digit NIL TRUE FALSE '(' '~' '"' '{' letter
-
-expression-a ::= relation SimpleExpression
-# start set:   '=' '#' '<' '<=' '>' '>=' IN IS
-# follow set:  ')' '..' ',' THEN OF DO TO BY ';' '}' ']' END ELSIF ELSE UNTIL
-#              RETURN '|'
-
-relation ::= '='
-          |  '#'
-          |  '<'
-          |  '<='
-          |  '>'
-          |  '>='
-          |  IN
-          |  IS
-# start set:   '=' '#' '<' '<=' '>' '>=' IN IS
-# follow set:  '+' '-' digit NIL TRUE FALSE '(' '~' '"' '{' letter
-
-DeclarationSequence-b ::= TYPE DeclarationSequence-b-a
-                       |  TYPE
-# start set:   TYPE
-# follow set:  VAR PROCEDURE BEGIN END RETURN
-
-DeclarationSequence-b-a ::= TypeDeclaration ';' DeclarationSequence-b-a
-                         |  TypeDeclaration ';'
-# start set:   letter
-# follow set:  VAR PROCEDURE BEGIN END RETURN
-
-TypeDeclaration ::= identdef '=' type
-# start set:   letter
-# follow set:  ';'
-
-type ::= qualident
-      |  ArrayType
-      |  RecordType
-      |  PointerType
-      |  ProcedureType
-# start set:   letter ARRAY RECORD POINTER PROCEDURE
-# follow set:  ';' END
-
-ArrayType ::= ARRAY length ArrayType-a OF type
-           |  ARRAY length OF type
-# start set:   ARRAY
-# follow set:  ';' END
-
-length ::= ConstExpression
-# start set:   '+' '-' digit NIL TRUE FALSE '(' '~' '"' '{' letter
-# follow set:  ',' OF
-
-ArrayType-a ::= ',' length ArrayType-a
-             |  ',' length
-# start set:   ','
-# follow set:  OF
-
-RecordType ::= RECORD RecordType-a RecordType-b END
-            |  RECORD RecordType-a END
-            |  RECORD END
-            |  RECORD RecordType-b END
-# start set:   RECORD
-# follow set:  ';' END
-
-RecordType-a ::= '(' BaseType ')'
-# start set:   '('
-# follow set:  letter END
-
-BaseType ::= qualident
-# start set:   letter
-# follow set:  ')'
-
-RecordType-b ::= FieldListSequence
-# start set:   letter
-# follow set:  END
-
-FieldListSequence ::= FieldList FieldListSequence-a
-                   |  FieldList
-# start set:   letter
-# follow set:  END
-
-FieldList ::= IdentList ':' type
-# start set:   letter
-# follow set:  ';' END
-
-IdentList ::= identdef IdentList-a
-           |  identdef
-# start set:   letter
-# follow set:  ':'
-
-IdentList-a ::= ',' identdef IdentList-a
-             |  ',' identdef
-# start set:   ','
-# follow set:  ':'
-
-FieldListSequence-a ::= ';' FieldList FieldListSequence-a
-                     |  ';' FieldList
-# start set:   ';'
-# follow set:  END
-
-PointerType ::= POINTER TO type
-# start set:   POINTER
-# follow set:  ';' END
-
-ProcedureType ::= PROCEDURE ProcedureType-a
-               |  PROCEDURE
-# start set:   PROCEDURE
-# follow set:  ';' ')' END
-
-ProcedureType-a ::= FormalParameters
-# start set:   '('
-# follow set:  ';' ')' END
-
-FormalParameters ::= '(' FormalParameters-a ')' FormalParameters-b
-                  |  '(' FormalParameters-a ')'
-                  |  '(' ')'
-                  |  '(' ')' FormalParameters-b
-# start set:   '('
-# follow set:  ';' ')' END
-
-FormalParameters-a ::= FPSection FormalParameters-a-a
-                    |  FPSection
-# start set:   letter VAR
-# follow set:  ')'
-
-FPSection ::= FPSection-a ident FPSection-b ':' FormalType
-           |  FPSection-a ident ':' FormalType
-           |  ident ':' FormalType
-           |  ident FPSection-b ':' FormalType
-# start set:   letter VAR
-# follow set:  ';' ')'
-
-FPSection-a ::= VAR
-# start set:   VAR
-# follow set:  letter
-
-FPSection-b ::= ',' ident FPSection-b
-             |  ',' ident
-# start set:   ','
-# follow set:  ':'
-
-FormalType ::= FormalType-a qualident
-            |  qualident
-            |  ProcedureType
-# start set:   ARRAY letter PROCEDURE
-# follow set:  ';' ')'
-
-FormalType-a ::= ARRAY OF FormalType-a
-              |  ARRAY OF
-# start set:   ARRAY
-# follow set:  letter
-
-FormalParameters-a-a ::= ';' FPSection FormalParameters-a-a
-                      |  ';' FPSection
-# start set:   ';'
-# follow set:  ')'
-
-FormalParameters-b ::= ':' qualident
-# start set:   ':'
-# follow set:  ';' ')' END
-
-DeclarationSequence-c ::= VAR DeclarationSequence-c-a
-                       |  VAR
-# start set:   VAR
-# follow set:  PROCEDURE BEGIN END RETURN
-
-DeclarationSequence-c-a ::= VariableDeclaration ';' DeclarationSequence-c-a
-                         |  VariableDeclaration ';'
-# start set:   letter
-# follow set:  PROCEDURE BEGIN END RETURN
-
-VariableDeclaration ::= IdentList ':' type
-# start set:   letter
-# follow set:  ';'
-
-DeclarationSequence-d ::= ProcedureDeclaration ';' DeclarationSequence-d
-                       |  ProcedureDeclaration ';'
-# start set:   PROCEDURE
-# follow set:  BEGIN END RETURN
-
-ProcedureDeclaration ::= ProcedureHeading ';' ProcedureBody ident
-# start set:   PROCEDURE
-# follow set:  ';'
-
-ProcedureHeading ::= PROCEDURE identdef ProcedureHeading-a
-                  |  PROCEDURE identdef
-# start set:   PROCEDURE
-# follow set:  ';'
-
-ProcedureHeading-a ::= FormalParameters
-# start set:   '('
-# follow set:  ';'
-
-ProcedureBody ::= DeclarationSequence ProcedureBody-a ProcedureBody-b END
-               |  DeclarationSequence ProcedureBody-a END
-               |  DeclarationSequence END
-               |  END
-               |  ProcedureBody-a END
-               |  DeclarationSequence ProcedureBody-b END
-               |  ProcedureBody-b END
-               |  ProcedureBody-a ProcedureBody-b END
-# start set:   END CONST TYPE VAR BEGIN RETURN PROCEDURE
-# follow set:  letter
-
-ProcedureBody-a ::= BEGIN StatementSequence
-                 |  BEGIN
-# start set:   BEGIN
-# follow set:  RETURN END
-
-StatementSequence ::= statement StatementSequence-a
-                   |  statement
-                   |  StatementSequence-a
-# start set:   ';' IF CASE WHILE REPEAT FOR letter
-# follow set:  ELSIF END ELSE UNTIL RETURN '|'
-
+//statement = [ assignment | ProcedureCall | IfStatement | CaseStatement | WhileStatement | RepeatStatement | ForStatement ]
+		//ex. a:=1 | myproc | myproc(3) | IF a=0 THEN b:=9 END | CASE myvar OF 1: Out.String("hi") END | WHILE a>9 DO b:=1 END | REPEAT a:=a+1 UNTIL a>10 | FOR i:=3 TO 9 BY 2 DO k:=k+1 END
 statement ::= statement-a
 # start set:   IF CASE WHILE REPEAT FOR letter
 # follow set:  ';' ELSIF END ELSE UNTIL RETURN '|'
@@ -1145,91 +1208,81 @@ statement-a ::= assignment
 # start set:   IF CASE WHILE REPEAT FOR letter
 # follow set:  ';' ELSIF END ELSE UNTIL RETURN '|'
 
-assignment ::= designator ':=' expression
+//StatementSequence = statement { ';' statement }
+		//ex. a:=2;b:=6
+StatementSequence ::= statement StatementSequence-a
+                   |  statement
+                   |  StatementSequence-a
+# start set:   ';' IF CASE WHILE REPEAT FOR letter
+# follow set:  ELSIF END ELSE UNTIL RETURN '|'
+
+StatementSequence-a ::= ';' statement StatementSequence-a
+                     |  ';' statement
+                     |  ';'
+                     |  ';' StatementSequence-a
+# start set:   ';'
+# follow set:  ELSIF END ELSE UNTIL RETURN '|'
+
+//string = '"' { character } '"' | digit { hexDigit } 'X'
+		//ex. "abcd" | 3BX
+		//note that hex string starts with a digit, ends with an X.
+string ::= '"' string-a '"'
+        |  '"' '"'
+        |  digit string-b 'X'
+        |  digit 'X'
+# start set:   digit '"'
+# follow set:  '*' '/' DIV MOD '&' '+' '-' OR '=' '#' '<' '<=' '>' '>=' IN IS
+#              ')' '..' ',' THEN OF DO TO BY ';' ':' '}' ']' END ELSIF ELSE
+#              UNTIL RETURN '|'
+
+string-a ::= character string-a
+          |  character
+# start set:   letter digit
+# follow set:  '"'
+
+string-b ::= hexDigit string-b
+          |  hexDigit
+# start set:   digit 'A' 'B' 'C' 'D' 'E' 'F'
+# follow set:  'X'
+
+//term = factor { MulOperator factor }
+		//ex. 3*4 | 5/8
+term ::= factor term-a
+      |  factor
+# start set:   digit NIL TRUE FALSE '(' '~' '"' '{' letter
+# follow set:  '+' '-' OR '=' '#' '<' '<=' '>' '>=' IN IS ')' '..' ',' THEN OF
+#              DO TO BY ';' '}' ']' END ELSIF ELSE UNTIL RETURN '|'
+
+term-a ::= MulOperator factor term-a
+        |  MulOperator factor
+# start set:   '*' '/' DIV MOD '&'
+# follow set:  '+' '-' OR '=' '#' '<' '<=' '>' '>=' IN IS ')' '..' ',' THEN OF
+#              DO TO BY ';' '}' ']' END ELSIF ELSE UNTIL RETURN '|'
+
+//TypeDeclaration = identdef '=' type
+		//ex. TYPE T* = INTEGER;
+TypeDeclaration ::= identdef '=' type
 # start set:   letter
-# follow set:  ';' ELSIF END ELSE UNTIL RETURN '|'
+# follow set:  ';'
 
-ProcedureCall ::= designator ProcedureCall-a
-               |  designator
+//type = qualident | ArrayType | RecordType | PointerType | ProcedureType
+		//ex. TYPE k: mymod.mytype; | TYPE k: ARRAY 3+1,4 OF INTEGER; | TYPE mytype = RECORD (basetype) x,y:INTEGER; z:CHAR END; | TYPE x: POINTER TO myrecord; | TYPE mp: PROCEDURE(a,b:INTEGER):INTEGER;
+type ::= qualident
+      |  ArrayType
+      |  RecordType
+      |  PointerType
+      |  ProcedureType
+# start set:   letter ARRAY RECORD POINTER PROCEDURE
+# follow set:  ';' END
+
+//VariableDeclaration = IdentList ':' type
+		//ex. VAR x,y: INTEGER;
+VariableDeclaration ::= IdentList ':' type
 # start set:   letter
-# follow set:  ';' ELSIF END ELSE UNTIL RETURN '|'
+# follow set:  ';'
 
-ProcedureCall-a ::= ActualParameters
-# start set:   '('
-# follow set:  ';' ELSIF END ELSE UNTIL RETURN '|'
-
-IfStatement ::= IF expression THEN StatementSequence IfStatement-a IfStatement-b
-                END
-             |  IF expression THEN StatementSequence IfStatement-a END
-             |  IF expression THEN StatementSequence END
-             |  IF expression THEN END
-             |  IF expression THEN IfStatement-a END
-             |  IF expression THEN StatementSequence IfStatement-b END
-             |  IF expression THEN IfStatement-b END
-             |  IF expression THEN IfStatement-a IfStatement-b END
-# start set:   IF
-# follow set:  ';' ELSIF END ELSE UNTIL RETURN '|'
-
-IfStatement-a ::= ELSIF expression THEN StatementSequence IfStatement-a
-               |  ELSIF expression THEN StatementSequence
-               |  ELSIF expression THEN
-               |  ELSIF expression THEN IfStatement-a
-# start set:   ELSIF
-# follow set:  ELSE END
-
-IfStatement-b ::= ELSE StatementSequence
-               |  ELSE
-# start set:   ELSE
-# follow set:  END
-
-CaseStatement ::= CASE expression OF case CaseStatement-a END
-               |  CASE expression OF case END
-               |  CASE expression OF END
-               |  CASE expression OF CaseStatement-a END
-# start set:   CASE
-# follow set:  ';' ELSIF END ELSE UNTIL RETURN '|'
-
-case ::= case-a
-# start set:   digit '"' letter
-# follow set:  '|' END
-
-case-a ::= CaseLabelList ':' StatementSequence
-        |  CaseLabelList ':'
-# start set:   digit '"' letter
-# follow set:  '|' END
-
-CaseLabelList ::= LabelRange CaseLabelList-a
-               |  LabelRange
-# start set:   digit '"' letter
-# follow set:  ':'
-
-LabelRange ::= label LabelRange-a
-            |  label
-# start set:   digit '"' letter
-# follow set:  ',' ':'
-
-label ::= integer
-       |  string
-       |  qualident
-# start set:   digit '"' letter
-# follow set:  '..' ',' ':'
-
-LabelRange-a ::= '..' label
-# start set:   '..'
-# follow set:  ',' ':'
-
-CaseLabelList-a ::= ',' LabelRange CaseLabelList-a
-                 |  ',' LabelRange
-# start set:   ','
-# follow set:  ':'
-
-CaseStatement-a ::= '|' case CaseStatement-a
-                 |  '|' case
-                 |  '|'
-                 |  '|' CaseStatement-a
-# start set:   '|'
-# follow set:  END
-
+//WhileStatement = WHILE expression DO StatementSequence { ELSIF expression DO StatementSequence } END
+		//ex. WHILE a>9 DO b:=1 ELSIF a>5 DO b:=2 ELSIF a>3 DO b:=3 END
 WhileStatement ::= WHILE expression DO StatementSequence WhileStatement-a END
                 |  WHILE expression DO StatementSequence END
                 |  WHILE expression DO END
@@ -1244,46 +1297,4 @@ WhileStatement-a ::= ELSIF expression DO StatementSequence WhileStatement-a
 # start set:   ELSIF
 # follow set:  END
 
-RepeatStatement ::= REPEAT StatementSequence UNTIL expression
-                 |  REPEAT UNTIL expression
-# start set:   REPEAT
-# follow set:  ';' ELSIF END ELSE UNTIL RETURN '|'
-
-ForStatement ::= FOR ident ':=' expression TO expression ForStatement-a DO
-                 StatementSequence END
-              |  FOR ident ':=' expression TO expression ForStatement-a DO END
-              |  FOR ident ':=' expression TO expression DO END
-              |  FOR ident ':=' expression TO expression DO StatementSequence
-                 END
-# start set:   FOR
-# follow set:  ';' ELSIF END ELSE UNTIL RETURN '|'
-
-ForStatement-a ::= BY ConstExpression
-# start set:   BY
-# follow set:  DO
-
-StatementSequence-a ::= ';' statement StatementSequence-a
-                     |  ';' statement
-                     |  ';'
-                     |  ';' StatementSequence-a
-# start set:   ';'
-# follow set:  ELSIF END ELSE UNTIL RETURN '|'
-
-ProcedureBody-b ::= RETURN expression
-# start set:   RETURN
-# follow set:  END
-
-module-b ::= BEGIN StatementSequence
-          |  BEGIN
-# start set:   BEGIN
-# follow set:  END
-
-
-# terminals:   MODULE ';' END '.' letter digit IMPORT ':=' ',' CONST '=' '*' '+'
-#              '-' NIL TRUE FALSE '(' ')' '~' 'H' 'A' 'B' 'C' 'D' 'E' 'F' '"'
-#              'X' '{' '}' '..' '[' ']' '^' '/' DIV MOD '&' OR '#' '<' '<=' '>'
-#              '>=' IN IS TYPE ARRAY OF RECORD ':' POINTER TO PROCEDURE VAR
-#              BEGIN IF THEN ELSIF ELSE CASE '|' WHILE DO REPEAT UNTIL FOR BY
-#              RETURN
-
-*/
+#endif
