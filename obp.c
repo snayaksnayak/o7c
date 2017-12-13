@@ -654,6 +654,7 @@ void StandFunc(Item *x, int fct, Type restyp)
             CheckInt(x);
             H(x);
         }
+
         x->type = restyp;
     }
     else
