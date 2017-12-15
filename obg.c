@@ -274,6 +274,7 @@ void load(Item* x)
     {
         op = Ldr;
     }
+
     if( x->mode != Reg )
     {
         if( x->mode == Const )
@@ -346,6 +347,7 @@ void load(Item* x)
             x->r = RH;
             incR();
         }
+
         x->mode = Reg;
     }
 }
@@ -2090,6 +2092,7 @@ void LDREG(Item* x, Item* y)
 
 //In-line code functions
 
+//absolute value of a Real or Int, no other
 void Abs(Item* x)
 {
     if( x->mode == Const )
@@ -2104,7 +2107,7 @@ void Abs(Item* x)
             Put1(Lsl, x->r, x->r, 1);
             Put1(Ror, x->r, x->r, 1);
         }
-        else
+        else // Int
         {
             Put1(Cmp, x->r, x->r, 0);
             Put3(BC, GE, 2);
@@ -2116,7 +2119,7 @@ void Abs(Item* x)
 
 void Odd(Item* x)
 {
-    load(x);
+    load(x); //bring to register (even if it is a literal)
     Put1(And, x->r, x->r, 1);
     SetCC(x, NE);
     RH--;

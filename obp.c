@@ -113,6 +113,8 @@ void qualident(Object *obj)
     }
 }
 
+//Functions to check and disply error
+
 void CheckBool(Item *x)
 {
     if( x->type->form != Bool )
@@ -149,6 +151,7 @@ void CheckSet(Item *x)
     }
 }
 
+//if not Int or Int but big/ngativee literal, show error
 void CheckSetVal(Item *x)
 {
     if( x->type->form != Int )
@@ -460,15 +463,13 @@ void Parameter(Object par)
     }
 }
 
-
-
+//for consuming all actual parametes
 void ParamList(Item *x)
 {
     int n;
     Object par;
     par = x->type->dsc;
     n = 0;
-
 
     //ActualParameters = "(" [ExpList] ")" .
     //ExpList = expression {"," expression}.
@@ -492,6 +493,7 @@ void ParamList(Item *x)
     {
         Get(&sym);
     }
+
     if( n < x->type->nofpar )
     {
         Mark("too few params");
@@ -553,7 +555,7 @@ void StandFunc(Item *x, int fct, Type restyp)
             {
                 Ord(x);
             }
-            else if( (x->type->form == String) && (x->b == 2) )
+            else if( (x->type->form == String) && (x->b == 2) ) //String of length 2 is a single character
             {
                 StrToChar(x);
             }
@@ -655,6 +657,7 @@ void StandFunc(Item *x, int fct, Type restyp)
             H(x);
         }
 
+		//fill result type in Item
         x->type = restyp;
     }
     else
@@ -751,17 +754,18 @@ void factor(Item *x)
             if( sym == LPAREN )
             {
                 Get(&sym);
-                if( (x->type->form == Proc) && (x->type->base->form != NoTyp) )
+                if( (x->type->form == Proc) && (x->type->base->form != NoTyp) ) //procedure with a valid return type (may be NilTyp)
                 {
                     PrepCall(x, &rx);
                     ParamList(x);
                     Call(x, rx);
+                    //result type
                     x->type = x->type->base;
                 }
                 else
                 {
                     Mark("not a function");
-                    ParamList(x);
+                    ParamList(x); //for parse to continue
                 }
             }
         }

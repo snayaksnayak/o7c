@@ -87,7 +87,7 @@ typedef struct ObjDesc
     int rdo; //boolean; denotes if read-only
     Object next; //all variables, types, constants, procedures, parameters, fields are connected through this
     Object dsc; //module object's dsc holds its variables and types
-    Type type; //type of variables
+    Type type; //type of vars, consts etc
     char name[ID_LEN]; //identifier name
     int val; //this is not the value of identifier as seen to the programmer
 	//Object classes and the meaning of "val":
@@ -123,7 +123,7 @@ typedef struct TypeDesc
     //Hence, type BYTE is compatible with type INTEGER, and vice-versa.
     int mno; //import order number of a module = modules's level
     int nofpar; //number of params for procedures, extension level for records
-    int len; //number of elements for arrays; len < 0 => open array; addr of descriptor for records
+    int len; //number of elements for arrays; (len < 0) => open array; addr of descriptor for records
     Object dsc; //Module object uses this to list all its symbols
     Object typobj; //ObjDesc
     Type base;
@@ -172,14 +172,20 @@ typedef struct Item
 //So they both hold similar values.
 
 //Item modes and meaning of fields:
-//mode    r      a       b
-//--------------------------------
-//Const   -      value   (proc addr)  (immediate value)
-//Var     base   off     -            (direct addr)
-//Par     -      off0    off1         (indirect addr)
-//Fld     -      -       -
-//Typ     -      -       -
-//--------------------------------
+//mode     type->form    r      a             b
+//----------------------------------------------------------
+//Const    Int           -      value         -               (immediate value)
+//Const    Real          -      float value   -
+//Const    Char          -      ascii value   -
+//Const    NilTyp        -      0             -
+//Const    String        -      str addr      len(str+'\0')
+//Const    Bool          -      0/1           -
+//Const    Proc          -      -             (proc addr)
+//Var                    base   off           -                   (direct addr)
+//Par                    -      off0          off1              (indirect addr)
+//Fld                    -      -             -
+//Typ                    -      -             -
+//----------------------------------------------------------
 //Reg     regno  -       -
 //RegI    regno  off     -
 //Cond    cond   Tjump   Fjump        (T=True, F=False)
@@ -620,7 +626,7 @@ designator-a ::= selector designator-a
 		//digits 0 to 9
 		//remember that we hadn't defined it in Oberon7 grammar
 		//hence its First & Follow set has not been generated.
-		
+
 //element = expression [ '..' expression ]
 		//ex. see second element of the set {1, 2..5, n+1..2*k}
 element ::= expression element-a
