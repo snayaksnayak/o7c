@@ -30,42 +30,89 @@
 //Oberon MOD is equivalent to C bitwise AND
 
 #include "obc.h"
+//maximum size of generated code
 #define maxCode 8000
+//maximum size of string literals
 #define maxStrx 2400
+//maximum size of type descriptors
 #define maxTD 120
 
 int WordSize = 4,
     StkOrg0 = -64, VarOrg0 = 0, //for RISC-0 only
     MT = 12, SB = 13, SP = 14, LNK = 15, //dedicated registers
-    C24 = 0x1000000,
-    Reg = 10, RegI = 11, Cond = 12,  //internal item modes
+    C24 = 0x1000000, //24 bit addresses for code
+    Reg = 10, RegI = 11, Cond = 12,  //item modes, class values are from 0 to 8
 
 //frequently used opcodes
-    U = 0x2000, V = 0x1000,
-    Mov = 0, Lsl = 1, Asr = 2, Ror= 3, And = 4, Ann = 5, Ior = 6, Xor = 7,
-    Add = 8, Sub = 9, Cmp = 9, Mul = 10, Div = 11,
-    Fad = 12, Fsb = 13, Fml = 14, Fdv = 15,
-    Ldr = 8, Str = 10,
-    BR = 0, BLR = 1, BC = 2, BL = 3,
-    MI = 0, PL = 8, EQ = 1, NE = 9, LT = 5, GE = 13, LE = 6, GT = 14;
 
-int pc, varsize;   //program counter, data index
-int tdx;
-int strx; //global string length counter for all string constants
+	//these two sets mode
+    U = 0x2000, V = 0x1000,
+    //bitwise operations
+    Mov = 0, Lsl = 1, Asr = 2, Ror= 3,
+    //logical operations
+    And = 4, Ann = 5, Ior = 6, Xor = 7,
+    //integer arithmetic operations
+    Add = 8, Sub = 9, Cmp = 9, Mul = 10, Div = 11,
+    //floating point arithmetic operations
+    Fad = 12, Fsb = 13, Fml = 14, Fdv = 15,
+    //load and store operations
+    Ldr = 8, Str = 10,
+    //branching operations
+    BR = 0, BLR = 1, BC = 2, BL = 3,
+    MI = 0, PL = 8,
+    EQ = 1, NE = 9,
+    //CS, CC
+    //VS, VC
+    //LS, HI
+    LT = 5, GE = 13,
+    LE = 6, GT = 14;
+
+int version;  //0 = RISC-0, 1 = RISC-5
 int entry;   //main entry point
 int RH;  //available registers R[0] ... R[H-1]
 int curSB;  //current static base in SB
 int frame;  //frame offset changed in SaveRegs and RestoreRegs
 int fixorgP, fixorgD, fixorgT;   //origins of lists of locations to be fixed up by loader
 int check;  //emit run-time checks
-int version;  //0 = RISC-0, 1 = RISC-5
 
 int relmap[6];  //condition codes for relations
-int code[maxCode];
-int data[maxTD];//type descriptors
-char _str[maxStrx]; //strx serves as its index
+int code[maxCode]; //contains generated code
+int pc //program counter
+int data[maxTD];//contains type descriptors
+int tdx; //global type descriptor counter
+int varsize; //data index
+char _str[maxStrx]; //coniains all string literals
+int strx; //global string length counter
 
-//instruction assemblers according to formats
+//Format0:   00u0  --a-  --b-  -op-                    --c-
+//bit num: 32----28----24----20----16----12----08----04----
+
+//op   mnemonic   normal meaning    special meaning if u=1
+//--   --------   --------------    ----------------------
+// 0   MOV a,0,c  Ra := Rc          when c=0, Ra := H; when c=1, Ra := 0000NZCV
+// 1   LSL a,b,c  Ra := Rb << Rc
+// 2   ASR a,b,c  Ra := Rb >> Rc
+// 3   ROR a,b,c  Ra := Rb ror Rc
+
+// 4   AND a,b,c  Ra := Rb & Rc
+// 5   ANN a,b,c  Ra := Rb & ~Rc
+// 6   IOR a,b,c  Ra := Rb or Rc
+// 7   XOR a,b,c  Ra := Rb xor Rc
+
+// 8   ADD a,b,c  Ra := Rb + Rc     ADD considers C bit
+// 9   SUB a,b,c  Ra := Rb – Rc     SUB considers C bit
+//10   MUL a,b,c  Ra := Ra * Rc     MUL does unsigned multiplication
+//11   DIV a,b,c  Ra := Rb div Rc
+
+//12   FAD a,b,c  Ra := Rb + Rc
+//13   FSB a,b,c  Ra := Rb – Rc
+//14   FML a,b,c  Ra := Ra * Rc
+//15   FDV a,b,c  Ra := Rb / Rc
+
+//MUL deposits high 32 bits of product in auxiliary register H
+//DIV deposits remainder in auxiliary register H
+
+//emit Format0 instructions
 void Put0(int op, int a, int b, int c)
 {
     //emit format-0 instruction
@@ -76,9 +123,42 @@ void Put0(int op, int a, int b, int c)
     printf("\n%#x\n", code[pc-1]);
 }
 
+//Format1:   00uv  --a-  --b-  -op-  <---------im--------->
+//bit num: 32----28----24----20----16----12----08----04----
+
+//immediate value (im) is 16bit inside instructions
+//it is expanded when transfered to 32bit registers
+//if v=0, while expanding im, MSBs of im is filled with 0
+//if v=1, while expanding im, MSBs of im is filled with 1
+
+//op   mnemonic    normal meaning    special meaning if u=1
+//--   --------    --------------    ----------------------
+// 0   MOV a,0,im  Ra := im          Ra := im << 16
+// 1   LSL a,b,im  Ra := Rb << im
+// 2   ASR a,b,im  Ra := Rb >> im
+// 3   ROR a,b,im  Ra := Rb ror im
+
+// 4   AND a,b,im  Ra := Rb & im
+// 5   ANN a,b,im  Ra := Rb & ~im
+// 6   IOR a,b,im  Ra := Rb or im
+// 7   XOR a,b,im  Ra := Rb xor im
+
+// 8   ADD a,b,im  Ra := Rb + im     ADD considers C bit
+// 9   SUB a,b,im  Ra := Rb – im     SUB considers C bit
+//10   MUL a,b,im  Ra := Ra * im     MUL does unsigned multiplication
+//11   DIV a,b,im  Ra := Rb div im
+
+//12   FAD a,b,im  Ra := Rb + im
+//13   FSB a,b,im  Ra := Rb – im
+//14   FML a,b,im  Ra := Ra * im
+//15   FDV a,b,im  Ra := Rb / im
+
+//MUL deposits high 32 bits of product in auxiliary register H
+//DIV deposits remainder in auxiliary register H
+
+//emit Format1 instructions when im is 16bit, i.e. -0x10000 <= im < 0x10000
 void Put1(int op, int a, int b, int im)
 {
-    //emit format-1 instruction,  -0x10000 <= im < 0x10000
     if( im < 0 )
     {
         op = op + V;
@@ -90,29 +170,39 @@ void Put1(int op, int a, int b, int im)
     printf("\n%#x\n", code[pc-1]);
 }
 
-
+//emit Format1 instructions when im is 32bit
 void Put1a(int op, int a, int b, int im)
 {
-    //same as Put1, but with range test  -0x10000H <= im < 0x10000
-    if( (im >= -0x10000) && (im <= 0x0FFFF) )
+    //if im is 16bit, i.e. -0x10000H <= im < 0x10000
+    if( (im >= -0x10000) && (im < 0x10000) )
     {
         Put1(op, a, b, im);
     }
-    else
+    else //if im is 32bit
     {
-        Put1(Mov+U, RH, 0, im >> 16);
-        if( (im & 0xFFFF) != 0 )
+        Put1(Mov+U, RH, 0, im >> 16); //MSBs of RH = MSBs of im
+        if( (im & 0xFFFF) != 0 ) //if there is any LSB
         {
-            Put1(Ior, RH, RH, im & 0xFFFF);
+            Put1(Ior, RH, RH, im & 0xFFFF); //RH = RH | LSBs of im
         }
-        Put0(op, a, b, RH);
+        Put0(op, a, b, RH); //Ra = Rb op RH
     }
 }
 
+//Format2:   10uv  --a-  --b-  <------------off----------->
+//bit num: 32----28----24----20----16----12----08----04----
 
+//load:  Ra := Mem[Rb + off]
+//store: Mem[Rb + off] := Ra
+//            uv
+//if op = 0b1000, it means load word
+//if op = 0b1001, it means load byte
+//if op = 0b1010, it means store word
+//if op = 0b1011, it means store byte
+
+//emit load/store Format2 instruction
 void Put2(int op, int a, int b, int off)
 {
-    //emit load/store instruction
     code[pc] = ((op * 0x10 + a) * 0x10 + b) * 0x100000 + (off & 0xFFFFF);
     pc++;
     printf("\npos = %d", pos());
@@ -120,9 +210,41 @@ void Put2(int op, int a, int b, int off)
     printf("\n%#x\n", code[pc-1]);
 }
 
+//             u
+//Format3:   110v  cond                          0000  --c-   
+//bit num: 32----28----24----20----16----12----08----04----
+//
+//           111v  cond  <---------------off-------------->                          
+//bit num: 32----28----24----20----16----12----08----04----
+
+//u=0 means branch to addr in Rc
+//u=1 means branch to PC + 1 + off
+//v=0 means link addr is not stored in R15
+//v=1 means link addr PC + 1 is stored in R15
+
+//cond  mnemonic  meaning           evaluation
+//----  --------  -------           ----------
+//0000  MI        negative(minus)   N
+//0001  EQ        equal(zero)       Z
+//0010  CS        carry set         C
+//0011  VS        overflow set      V
+//0100  LS        less or same      ~C|Z
+//0101  LT        less than         N#V
+//0110  LE        less or equal     (N#V)|Z
+//0111            always            true
+
+//1000  PL        positive(plus)    ~N
+//1001  NE        not equal         ~Z
+//1010  CC        carry clear       ~C
+//1011  VC        overflow clear    ~V
+//1100  HI        high              ~(~C|Z)
+//1101  GE        greater or equal  ~(N#V)
+//1110  GT        greater than      ~((N#V)|Z)
+//1111            never             flase
+
+//emit branch instruction
 void Put3(int op, int cond, int off)
 {
-    //emit branch instruction
     code[pc] = ((op+12) * 0x10 + cond) * 0x1000000 + (off & 0xFFFFFF);
     pc++;
     printf("\npos = %d", pos());
@@ -130,7 +252,10 @@ void Put3(int op, int cond, int off)
     printf("\n%#x\n", code[pc-1]);
 }
 
-
+//increament register stack top.
+//R0-R11 is treated as a register stack
+//R12-R15 are special purpose registers
+//MT = 12, SB = 13, SP = 14, LNK = 15
 void incR()
 {
     if( RH < MT-1 )
@@ -143,7 +268,7 @@ void incR()
     }
 }
 
-
+//used in StatSequence() after consuming one statement
 void CheckRegs()
 {
     if( RH != 0 )
@@ -151,12 +276,13 @@ void CheckRegs()
         Mark("Reg Stack");
         RH = 0;
     }
-    if( pc >= maxCode -40 )
+    if( pc >= maxCode - 40 )
     {
         Mark("program too long");
     }
 }
 
+//makes a Cond type Item
 void SetCC(Item *x, int n)
 {
     x->mode = Cond;
@@ -165,12 +291,11 @@ void SetCC(Item *x, int n)
     x->r = n;
 }
 
-
+//Trap address is at MT
 void Trap(int cond, int num)
 {
     Put3(BLR, cond, pos()*0x100 + num*0x10 + MT);
 }
-
 
 //handling of forward reference, fixups of branch addresses and constant tables
 int negated(int cond)
@@ -2279,7 +2404,6 @@ void Adr(Item* x)
 
 void Condition(Item* x)
 {
-
     //x->mode == Const
     SetCC(x, x->a);
 }

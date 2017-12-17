@@ -1016,7 +1016,7 @@ void initObt()
     System = 0; //System is temporarily being used here
 
     //functions
-    enter("UML", SFunc, intType, 132); //n = procno*10 + nofpar; why? see obp.c:StandFunc()
+    enter("UML", SFunc, intType, 132); //n = procno*10 + nofpar; why? see StandFunc()
     enter("SBC", SFunc, intType, 122); //not in language definition
     enter("ADC", SFunc, intType, 112); //not in language definition
     enter("ROR", SFunc, intType, 92);

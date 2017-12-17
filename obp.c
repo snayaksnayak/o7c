@@ -1283,10 +1283,6 @@ void StatSequence()
 
         }
 
-
-
-
-
 //StatementSequence = statement {";" statement}.
 //statement = [assignment | ProcedureCall | IfStatement | CaseStatement | WhileStatement | RepeatStatement | ForStatement].
 //assignment = designator ":=" expression.
@@ -1582,7 +1578,6 @@ void StatSequence()
 //CaseLabelList = LabelRange {"," LabelRange}.
 //LabelRange = label [".." label].
 //label = integer | string | qualident.
-
         else if( sym == CASE )
         {
             Get(&sym);
@@ -1628,7 +1623,8 @@ void StatSequence()
         }
 
         CheckRegs();
-        if( sym == SEMICOLON ) //why? which semicolon?
+        //StatementSequence = statement { ';' statement }
+        if( sym == SEMICOLON )
         {
             Get(&sym);
         }
@@ -1636,7 +1632,6 @@ void StatSequence()
         {
             Mark("missing semicolon?");
         }
-
     }
     while(!( sym > SEMICOLON ));
 
