@@ -860,7 +860,8 @@ void BuildTD(Type T, int* dc)
     int dcw, k, s;
 	//set len
     T->len = *dc;
-	//s is 32byte aligned
+	//s needs to be 32, 64, 128, 256 byte chunks
+    //s assumes 8 byte overhead for type extension and garbage collector
     s = T->size;
     if( s <= 24 )
     {
@@ -876,7 +877,7 @@ void BuildTD(Type T, int* dc)
     }
     else
     {
-        s = (s+263) / 256 * 256; //why 263?
+        s = (s+263) / 256 * 256; //two 256 byte chunks may be required if s=249 + 8 byte overhead
     }
 
     dcw = *dc / 4; //convert size for heap allocation, dcw = word address
@@ -2562,7 +2563,7 @@ void Close(char* modid, int key, int nofent)
             {
                 i++;
             }
-            i = (i+4) / 4 * 4;
+            i = (i+4) / 4 * 4; //why?
             comsize = comsize + i+4;
         }
         else if( obj->class == Var )
