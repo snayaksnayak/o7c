@@ -29,9 +29,9 @@ typedef struct PtrBaseDesc
 } PtrBaseDesc, *PtrBase;
 
 int sym; //last symbol/token read, holds return value of scanner Get()
-int dc;    //data counter
+int dc; //data counter; holds whole size of total variables declared in a module, which is finally assigned to varsize of OBG
 int level, exno, version;
-int newSF;  //compiler option: create/overwrite new symbol file?
+int newSF; //compiler option: create/overwrite new symbol file?
 
 char modid[ID_LEN]; //holds currentnly compiling module name
 PtrBase pbsList;   //list of names of pointer base types
@@ -71,7 +71,8 @@ void CheckExport(int *expo)
     {
         *expo = TRUE;
         Get(&sym);
-        if( level != 0 )
+        if( level != 0 ) //only symbols of module is allowed to be exported,
+						 //not symbols of a procedure declared inside module.
         {
             Mark("remove asterisk");
         }
@@ -151,7 +152,7 @@ void CheckSet(Item *x)
     }
 }
 
-//if not Int or Int but big/ngativee literal, show error
+//if not Int or Int but big/negative literal, show error
 void CheckSetVal(Item *x)
 {
     if( x->type->form != Int )
@@ -2337,10 +2338,10 @@ void Declarations(int *varsize)
         //identdef = ident ["*"].
         while( sym == IDENT )
         {
-            CopyId(id);
+            CopyId(id); //get the const symbol
             Get(&sym);
             CheckExport(&expo); //consumes "*"
-            if( sym == EQL )
+            if( sym == EQL ) //consumes "="
             {
                 Get(&sym);
             }
@@ -2348,17 +2349,26 @@ void Declarations(int *varsize)
             {
                 Mark("= ?");
             }
-            expression(&x); //srinu
-            if( (x.type->form == String) && (x.b == 2) ) //why? 2?
+            expression(&x); //parse the expression
+            //string size 2 means one character and '\0',
+            //in Oberon, string literal with size 2 is treated as
+            //character literal, ex: "z"
+            if( (x.type->form == String) && (x.b == 2) ) 
             {
                 StrToChar(&x);
             }
+            //create Const Object for the declared constant
+            //expression assigned to it is held in Item x.
             NewObj(&obj, id, Const);
+            //mark if this symbol is exported via '*' mark
             obj->expo = expo;
+            //if assigned expression Item is made from
+            //MakeConstItem() or MakeRealItem() or MakeStringItem(),
+            //mark declared symbol's type equal to expression's type
             if( x.mode == Const )
             {
                 obj->val = x.a;
-                obj->lev = x.b;
+                obj->lev = x.b; //lev abused for string length
                 obj->type = x.type;
             }
             else
@@ -2369,7 +2379,7 @@ void Declarations(int *varsize)
             Check(SEMICOLON, "; missing"); //consumes ";"
         }
     }
-
+//srinu
     if( sym == TYPE )
     {
         Get(&sym);
@@ -2377,10 +2387,10 @@ void Declarations(int *varsize)
         //TypeDeclaration = identdef "=" type.
         while( sym == IDENT )
         {
-            CopyId(id);
+            CopyId(id); //get the type symbol
             Get(&sym);
             CheckExport(&expo);//consumes "*"
-            if( sym == EQL )
+            if( sym == EQL ) //consumes "="
             {
                 Get(&sym);
             }
@@ -2388,17 +2398,22 @@ void Declarations(int *varsize)
             {
                 Mark("=?");
             }
-            _Type(&tp);
+            _Type(&tp); //get its type
 
             NewObj(&obj, id, Typ);
             obj->type = tp;
-            obj->expo = expo;
-            obj->lev = level;
+            obj->expo = expo; //mark if this symbol is exported via '*' mark
+            obj->lev = level; //0, since this type symbol is declared in current module
+            
+            //assign Object created for this type symbol
+            //as typobj in TypeDesc of declared type
             if( tp->typobj == NIL )
             {
                 tp->typobj = obj;
             }
 
+			//increase export number for exported record
+			//as well as note down object's export number
             if( expo && (obj->type->form == Record) )
             {
                 obj->exno = exno;
@@ -2408,6 +2423,7 @@ void Declarations(int *varsize)
             {
                 obj->exno = 0;
             }
+            
             if( tp->form == Record )
             {
                 ptbase = pbsList;//check whether this is base of a pointer type; search and fixup
@@ -2436,19 +2452,20 @@ void Declarations(int *varsize)
         //VariableDeclaration = IdentList ":" type.
         while( sym == IDENT )
         {
-            IdentList(Var, &first);
-            _Type(&tp);
-            obj = first;
+            IdentList(Var, &first); //see all variables declared like aVar, bVar: INTEGER
+            _Type(&tp); //find their type
+            obj = first; //all variables are linked, so start from first
             while( obj != NIL )
             {
                 obj->type = tp;
                 obj->lev = level;
-                if( tp->size > 1 )
+                if( tp->size > 1 ) //if variable is going to take more than 1byte, make it 4byte aligned
                 {
                     *varsize = (*varsize + 3) / 4 * 4;
                 }
+                //assign the aligned value as variable's address
                 obj->val = *varsize;
-                *varsize = *varsize + obj->type->size;
+                *varsize = *varsize + obj->type->size; //note that not every variable start at 4byte aligned address, only variables with more than 1byte size are allocated at 4byte aligned address
                 if( obj->expo )
                 {
                     obj->exno = exno;
@@ -2460,7 +2477,7 @@ void Declarations(int *varsize)
         }
     }
 
-
+	//make total data size 4byte aligned
     *varsize = (*varsize + 3) / 4 * 4;
     ptbase = pbsList;
     while( ptbase != NIL )
@@ -2496,7 +2513,7 @@ void _Module()
             version = 0;
             Get(&sym);
         }
-        else
+        else //in newer version risc, we don't write MODULE* Abcd, we write MODULE Abcd
         {
             version = 1;
         }
@@ -2568,7 +2585,7 @@ void _Module()
 
         Declarations(&dc); //consumes DeclarationSequence except ProcedureDeclaration
 
-        SetDataSize((dc + 3) / 4 * 4); //aligning to 4 bytes
+        SetDataSize((dc + 3) / 4 * 4); //aligning to 4 bytes and send to varsize of OBG
 
         while( sym == PROCEDURE )
         {

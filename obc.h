@@ -81,7 +81,7 @@ typedef struct TypeDesc TypeDesc, *Type;
 typedef struct ObjDesc
 {
     int class; //class=Const, class=Var, class=Par, class=Typ etc...
-    int lev; //import order number of a module = modules's level
+    int lev; //import order number of a module = modules's level; also used to denote string length
     int exno; //export number; each exported variable is assigned a number
     int expo; //boolean; denotes if exported with '*' mark
     int rdo; //boolean; denotes if read-only
@@ -429,10 +429,10 @@ WhileStatement = WHILE expression DO StatementSequence { ELSIF expression DO Sta
 #ifdef 0
 
 //Below we list
-//EBNF grammar,
-//example,
-//equivalent epsilon-less BNF grammar and
-//First & Follow set.
+//each production from EBNF grammar,
+//some examples for it,
+//its equivalent epsilon-less BNF grammar and
+//its First & Follow set.
 
 # terminals:   MODULE ';' END '.' letter digit IMPORT ':=' ',' CONST '=' '*' '+'
 #              '-' NIL TRUE FALSE '(' ')' '~' 'H' 'A' 'B' 'C' 'D' 'E' 'F' '"'
@@ -664,7 +664,10 @@ expression-a ::= relation SimpleExpression
 #              RETURN '|'
 
 //factor = number | string | NIL | TRUE | FALSE | set | designator [ ActualParameters ] | '(' expression ')' | '~' factor
-		//ex. 3 | "hi" | {1, 2} | myvar | myproc(9,6) | (6*7) | ~mybool
+		//ex. 3 | "z" | "hi" | {1, 2} | myvar | myproc(9,6) | (6*7) | ~mybool
+		//note thatin Oberon, we have no character literal,
+		//string literal of length 2 is treated as character literal
+		//length 2 includes '\0'
 factor ::= number
         |  string
         |  NIL

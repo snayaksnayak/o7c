@@ -55,6 +55,7 @@ void NewObj(Object *obj, char *id, int class)
     {
         x = x->next;
     }
+    
     if( x->next == 0 )
     {
         NEW((void **)&new, sizeof(ObjDesc));
@@ -63,6 +64,7 @@ void NewObj(Object *obj, char *id, int class)
         new->next = 0;
         new->rdo = FALSE;
         new->dsc = 0;
+        //insert it at tail
         x->next = new;
         *obj = new;
     }

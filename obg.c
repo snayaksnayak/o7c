@@ -47,6 +47,7 @@ int WordSize = 4,
 
 	//these two sets mode
     U = 0x2000, V = 0x1000,
+    
     //bitwise operations
     Mov = 0, Lsl = 1, Asr = 2, Ror= 3,
     //logical operations
@@ -55,13 +56,17 @@ int WordSize = 4,
     Add = 8, Sub = 9, Cmp = 9, Mul = 10, Div = 11,
     //floating point arithmetic operations
     Fad = 12, Fsb = 13, Fml = 14, Fdv = 15,
+    
     //load and store operations
     Ldr = 8, Str = 10,
+    
     //branching operations
     BR = 0, BLR = 1, BC = 2, BL = 3,
-    MI = 0, PL = 8,
-    EQ = 1, NE = 9,
-    //CS, CC
+    
+    //condition codes
+    MI = 0, PL = 8, //to denote positive or negative number
+    EQ = 1, NE = 9, //only six relational operators exist in language
+    //CS, CC //so these are not used
     //VS, VC
     //LS, HI
     LT = 5, GE = 13,
@@ -80,7 +85,7 @@ int code[maxCode]; //contains generated code
 int pc //program counter
 int data[maxTD];//contains type descriptors
 int tdx; //global type descriptor counter
-int varsize; //data index
+int varsize; //data index; holds whole size of total variables declared in a module, which gets its value from dc of OBP
 char _str[maxStrx]; //coniains all string literals
 int strx; //global string length counter
 
@@ -195,10 +200,10 @@ void Put1a(int op, int a, int b, int im)
 //load:  Ra := Mem[Rb + off]
 //store: Mem[Rb + off] := Ra
 //            uv
-//if op = 0b1000, it means load word
-//if op = 0b1001, it means load byte
-//if op = 0b1010, it means store word
-//if op = 0b1011, it means store byte
+//if op = 0b1000 = 8, it means load word
+//if op = 0b1001 = 9, it means load byte
+//if op = 0b1010 = 10, it means store word
+//if op = 0b1011 = 11, it means store byte
 
 //emit load/store Format2 instruction
 void Put2(int op, int a, int b, int off)
@@ -291,13 +296,15 @@ void SetCC(Item *x, int n)
     x->r = n;
 }
 
-//Trap address is at MT
+//Module Table address is at MT
 void Trap(int cond, int num)
 {
     Put3(BLR, cond, pos()*0x100 + num*0x10 + MT);
 }
 
 //handling of forward reference, fixups of branch addresses and constant tables
+
+//MI becomes PL, EQ becomes NE
 int negated(int cond)
 {
     if( cond < 8 )
@@ -311,12 +318,13 @@ int negated(int cond)
     return cond;
 }
 
-
+//invalidate Static Base, which is base address of module variables
 void invalSB()
 {
     curSB = 1;
 }
 
+//fix offset at code[at] with with
 void fix(int at, int with)
 {
     code[at] = ((code[at] >> 24) * C24) + (with & 0xFFFFFF);
@@ -333,7 +341,6 @@ void FixLink(int L)
         L = L1;
     }
 }
-
 
 void FixLinkWith(int L0, int dst)
 {
@@ -366,7 +373,6 @@ int merged(int L0, int L1)
     return L1;
 }
 
-
 // loading of operands and addresses into registers
 
 void GetSB(int base)
@@ -379,6 +385,7 @@ void GetSB(int base)
     }
 }
 
+//segfault
 void NilCheck()
 {
     if( check )
@@ -393,11 +400,11 @@ void load(Item* x)
 
     if( x->type->size == 1 )
     {
-        op = Ldr+1;
+        op = Ldr+1; //load byte
     }
     else
     {
-        op = Ldr;
+        op = Ldr; //load word
     }
 
     if( x->mode != Reg )
@@ -563,8 +570,6 @@ void loadStringAdr(Item* x)
     incR();
 }
 
-
-
 // Items: Conversion from literals or from Objects on the Heap to Items on the Stack
 // makes item for INT, CHAR, NILL, FALS, TRU symbols/literals
 void MakeConstItem(Item* x, Type typ, int val)
@@ -639,12 +644,13 @@ void MakeItem(Item* x, Object y, int curlev)
     }
     else if( (y->class == Const) && (y->type->form == String) )
     {
-        x->b = y->lev;
+        x->b = y->lev; //lev abused for string length
     }
     else
     {
         x->r = y->lev;
     }
+    
     if( (y->lev > 0) && (y->lev != curlev) && (y->class != Const) )
     {
         Mark("level error, not accessible");
@@ -652,7 +658,6 @@ void MakeItem(Item* x, Object y, int curlev)
 }
 
 // Code generation for Selectors, Variables, Constants
-
 
 void Field(Item* x, Object y) // x := x.y
 {
@@ -942,9 +947,7 @@ void _TypeTest(Item* x, Type T, int varpar, int isguard)
     }
 }
 
-
 //Code generation for Boolean operators
-
 
 void Not(Item* x)   //x := ~x
 {
@@ -1007,7 +1010,6 @@ void Or2(Item* x, Item* y)
 }
 
 // Code generation for arithmetic operators
-
 
 void Neg(Item* x)   // x := -x
 {
@@ -1258,7 +1260,6 @@ void DivOp(int op, Item* x, Item* y)   // x := x op y
 
 // Code generation for REAL operators
 
-
 void RealOp(int op, Item* x, Item* y)   // x := x op y
 {
     load(x);
@@ -1284,7 +1285,6 @@ void RealOp(int op, Item* x, Item* y)   // x := x op y
 }
 
 // Code generation for set operators
-
 
 void Singleton(Item* x)  // x := {x}
 {
@@ -1447,7 +1447,6 @@ void SetOp(int op, Item* x, Item* y)   // x := x op y
 
 // Code generation for relations
 
-
 void IntRelation(int op, Item* x, Item* y)   // x := x < y
 {
     if( (y->mode == Const) && (y->type->form != Proc) )
@@ -1492,8 +1491,6 @@ void RealRelation(int op, Item* x, Item* y )   // x := x < y
 void StringRelation(int op, Item* x, Item* y)   // x := x < y
 {
     //x, y are char arrays or strings
-
-
     if( x->type->form == String )
     {
         loadStringAdr(x);
@@ -1502,6 +1499,7 @@ void StringRelation(int op, Item* x, Item* y)   // x := x < y
     {
         loadAdr(x);
     }
+    
     if( y->type->form == String )
     {
         loadStringAdr(y);
@@ -1510,9 +1508,10 @@ void StringRelation(int op, Item* x, Item* y)   // x := x < y
     {
         loadAdr(y);
     }
-    Put2(Ldr+1, RH, x->r, 0);
+    
+    Put2(Ldr+1, RH, x->r, 0); //load byte
     Put1(Add, x->r, x->r, 1);
-    Put2(Ldr+1, RH+1, y->r, 0);
+    Put2(Ldr+1, RH+1, y->r, 0); //load byte
     Put1(Add, y->r, y->r, 1);
     Put0(Cmp, RH+2, RH, RH+1);
     Put3(BC, NE, 2);
@@ -1521,7 +1520,6 @@ void StringRelation(int op, Item* x, Item* y)   // x := x < y
     RH = RH - 2;
     SetCC(x, relmap[op - EQL]);
 }
-
 
 // Code generation of Assignments
 
@@ -1665,7 +1663,6 @@ void CopyString(Item*x, Item* y)  //x := y
 
 }
 
-
 // Code generation for parameters
 
 void OpenArrayParam(Item* x)
@@ -1725,7 +1722,6 @@ void StringParam(Item* x)
     incR();//len
 }
 
-
 // For Statements
 
 void For0(Item* x, Item* y)
@@ -1769,7 +1765,6 @@ void For2(Item* x, Item* y, Item* w)
     Put1a(Add, x->r, x->r, w->a);
 }
 
-
 // Branches, procedure calls, procedure prolog and epilog
 
 int Here()
@@ -1783,7 +1778,6 @@ void FJump(int *L)
     Put3(BC, 7, *L);
     *L = pc-1;
 }
-
 
 void CFJump(Item* x)
 {
@@ -1975,12 +1969,12 @@ void Return(int form, Item* x, int size, int internal)
     RH = 0;
 }
 
-
 // In-line code procedures
 
 void Increment(int upordown, Item* x, Item* y)
 {
     int op, zr, v;
+    
     //frame = 0
     if( upordown == 0 )
     {
@@ -1990,6 +1984,7 @@ void Increment(int upordown, Item* x, Item* y)
     {
         op = Sub;
     }
+    
     if( x->type == byteType )
     {
         v = 1;
@@ -1998,15 +1993,17 @@ void Increment(int upordown, Item* x, Item* y)
     {
         v = 0;
     }
+    
     if( y->type->form == NoTyp )
     {
         y->mode = Const;
         y->a = 1;
     }
+    
     if( (x->mode == Var) && (x->r > 0) )
     {
         zr = RH;
-        Put2(Ldr+v, zr, SP, x->a);
+        Put2(Ldr+v, zr, SP, x->a); //if v=0, load word, if v=1, load byte
         incR();
         if( y->mode == Const )
         {
@@ -2018,14 +2015,14 @@ void Increment(int upordown, Item* x, Item* y)
             Put0(op, zr, zr, y->r);
             RH--;
         }
-        Put2(Str+v, zr, SP, x->a);
+        Put2(Str+v, zr, SP, x->a); //if v=0, store word, if v=1, store byte
         RH--;
     }
     else
     {
         loadAdr(x);
         zr = RH;
-        Put2(Ldr+v, RH, x->r, 0);
+        Put2(Ldr+v, RH, x->r, 0); //if v=0, load word, if v=1, load byte
         incR();
         if( y->mode == Const )
         {
@@ -2037,7 +2034,7 @@ void Increment(int upordown, Item* x, Item* y)
             Put0(op, zr, zr, y->r);
             RH--;
         }
-        Put2(Str+v, zr, x->r, 0);
+        Put2(Str+v, zr, x->r, 0); //if v=0, store word, if v=1, store byte
         RH = RH - 2;
     }
 }
@@ -2195,7 +2192,6 @@ void Copy(Item* x, Item* y , Item* z)
 
 void LDPSR(Item* x)
 {
-
     //x->mode == Const
     Put3(0, 15, x->a + 0x20);
 }
@@ -2418,7 +2414,7 @@ void Open(int v)
     fixorgP = 0;
     fixorgD = 0;
     fixorgT = 0;
-    check = (v != 0);
+    check = (v != 0); //check=1 for risc v=1, not for v=0
     version = v;
     if( v == 0 )
     {
@@ -2432,6 +2428,8 @@ void Open(int v)
     }
 }
 
+//updates whole size of total variables declared in a module,
+//which is collected from dc of OBP
 void SetDataSize(int dc)
 {
     varsize = dc;
