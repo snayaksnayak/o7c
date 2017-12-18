@@ -2353,7 +2353,7 @@ void Declarations(int *varsize)
             //string size 2 means one character and '\0',
             //in Oberon, string literal with size 2 is treated as
             //character literal, ex: "z"
-            if( (x.type->form == String) && (x.b == 2) ) 
+            if( (x.type->form == String) && (x.b == 2) )
             {
                 StrToChar(&x);
             }
@@ -2403,8 +2403,8 @@ void Declarations(int *varsize)
             NewObj(&obj, id, Typ);
             obj->type = tp;
             obj->expo = expo; //mark if this symbol is exported via '*' mark
-            obj->lev = level; //0, since this type symbol is declared in current module
-            
+            obj->lev = level; //level=0, since this type symbol is declared in module, not inside inner procedures
+
             //assign Object created for this type symbol
             //as typobj in TypeDesc of declared type
             if( tp->typobj == NIL )
@@ -2423,7 +2423,7 @@ void Declarations(int *varsize)
             {
                 obj->exno = 0;
             }
-            
+
             if( tp->form == Record )
             {
                 ptbase = pbsList;//check whether this is base of a pointer type; search and fixup
@@ -2435,10 +2435,11 @@ void Declarations(int *varsize)
                     }
                     ptbase = ptbase->next;
                 }
+
                 if( level == 0 )
                 {
-                    BuildTD(tp, &dc);
-                }//type descriptor; len used as its address
+                    BuildTD(tp, &dc); //type descriptor; len used as its address
+                }
             }
 
             Check(SEMICOLON, "; missing"); //consumes ";"

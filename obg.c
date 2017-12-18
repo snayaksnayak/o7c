@@ -47,7 +47,7 @@ int WordSize = 4,
 
 	//these two sets mode
     U = 0x2000, V = 0x1000,
-    
+
     //bitwise operations
     Mov = 0, Lsl = 1, Asr = 2, Ror= 3,
     //logical operations
@@ -56,13 +56,13 @@ int WordSize = 4,
     Add = 8, Sub = 9, Cmp = 9, Mul = 10, Div = 11,
     //floating point arithmetic operations
     Fad = 12, Fsb = 13, Fml = 14, Fdv = 15,
-    
+
     //load and store operations
     Ldr = 8, Str = 10,
-    
+
     //branching operations
     BR = 0, BLR = 1, BC = 2, BL = 3,
-    
+
     //condition codes
     MI = 0, PL = 8, //to denote positive or negative number
     EQ = 1, NE = 9, //only six relational operators exist in language
@@ -82,7 +82,7 @@ int check;  //emit run-time checks
 
 int relmap[6];  //condition codes for relations
 int code[maxCode]; //contains generated code
-int pc //program counter
+int pc; //program counter
 int data[maxTD];//contains type descriptors
 int tdx; //global type descriptor counter
 int varsize; //data index; holds whole size of total variables declared in a module, which gets its value from dc of OBP
@@ -216,10 +216,10 @@ void Put2(int op, int a, int b, int off)
 }
 
 //             u
-//Format3:   110v  cond                          0000  --c-   
+//Format3:   110v  cond                          0000  --c-
 //bit num: 32----28----24----20----16----12----08----04----
 //
-//           111v  cond  <---------------off-------------->                          
+//           111v  cond  <---------------off-------------->
 //bit num: 32----28----24----20----16----12----08----04----
 
 //u=0 means branch to addr in Rc
@@ -650,7 +650,7 @@ void MakeItem(Item* x, Object y, int curlev)
     {
         x->r = y->lev;
     }
-    
+
     if( (y->lev > 0) && (y->lev != curlev) && (y->class != Const) )
     {
         Mark("level error, not accessible");
@@ -857,8 +857,10 @@ void FindPtrFlds(Type typ, int off, int *dcw)
 
 void BuildTD(Type T, int* dc)
 {
-    int dcw, k, s; //dcw = word address
-    dcw = *dc / 4; //convert size for heap allocation
+    int dcw, k, s;
+	//set len
+    T->len = *dc;
+	//s is 32byte aligned
     s = T->size;
     if( s <= 24 )
     {
@@ -874,11 +876,13 @@ void BuildTD(Type T, int* dc)
     }
     else
     {
-        s = (s+263) / 256 * 256;
+        s = (s+263) / 256 * 256; //why 263?
     }
-    T->len = *dc;
-    data[dcw] = s;
-    dcw++; //len used as address
+
+    dcw = *dc / 4; //convert size for heap allocation, dcw = word address
+    data[dcw] = s; //len used as address
+    dcw++;
+
     k = T->nofpar; //extension level!
     if( k > 3 )
     {
@@ -899,6 +903,7 @@ void BuildTD(Type T, int* dc)
     dcw++;
     tdx = dcw;
     *dc = dcw*4;
+
     if( tdx >= maxTD )
     {
         Mark("too many record types");
@@ -1499,7 +1504,7 @@ void StringRelation(int op, Item* x, Item* y)   // x := x < y
     {
         loadAdr(x);
     }
-    
+
     if( y->type->form == String )
     {
         loadStringAdr(y);
@@ -1508,7 +1513,7 @@ void StringRelation(int op, Item* x, Item* y)   // x := x < y
     {
         loadAdr(y);
     }
-    
+
     Put2(Ldr+1, RH, x->r, 0); //load byte
     Put1(Add, x->r, x->r, 1);
     Put2(Ldr+1, RH+1, y->r, 0); //load byte
@@ -1974,7 +1979,7 @@ void Return(int form, Item* x, int size, int internal)
 void Increment(int upordown, Item* x, Item* y)
 {
     int op, zr, v;
-    
+
     //frame = 0
     if( upordown == 0 )
     {
@@ -1984,7 +1989,7 @@ void Increment(int upordown, Item* x, Item* y)
     {
         op = Sub;
     }
-    
+
     if( x->type == byteType )
     {
         v = 1;
@@ -1993,13 +1998,13 @@ void Increment(int upordown, Item* x, Item* y)
     {
         v = 0;
     }
-    
+
     if( y->type->form == NoTyp )
     {
         y->mode = Const;
         y->a = 1;
     }
-    
+
     if( (x->mode == Var) && (x->r > 0) )
     {
         zr = RH;
