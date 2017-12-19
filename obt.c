@@ -55,7 +55,7 @@ void NewObj(Object *obj, char *id, int class)
     {
         x = x->next;
     }
-    
+
     if( x->next == 0 )
     {
         NEW((void **)&new, sizeof(ObjDesc));
@@ -1005,7 +1005,7 @@ void initObt()
     realType = type(Real, Real, 4);
     setType = type(Set, Set,4);
 
-    nilType = type(NilTyp, NilTyp, 4); //its corresponding Object doesn't exist!
+    nilType = type(NilTyp, NilTyp, 4); //its corresponding Object doesn't exist! why? size 4?
     noType = type(NoTyp, NoTyp, 4); //its corresponding Object doesn't exist!
     strType = type(String, String, 8); //its corresponding Object doesn't exist!
 

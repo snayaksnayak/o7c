@@ -1441,32 +1441,90 @@ WhileStatement-a ::= ELSIF expression DO StatementSequence WhileStatement-a
 
 #if 0
 
-*topScope--->Object | *next--->Object | *next
-             --------------    --------------
-             class- Head       class- Module
-             name-             name- 
-             *type-            *type---.
-             *dsc---.          *dsc-    \   
-                    |                    `------>Type | *base--->Type | *base
-                    |                            ------------    ------------
-                    |                            form-           form-       
-                    |                            size-           size-       
-                    |                            len-            len-        
-                    V                            *dsc-           *dsc-       
-             Object | *next--->Object | *next
-             --------------    --------------
-             class- Head       class- Module
-             name-             name- 
-             *dsc---.          *dsc-    \   
-                    |                    `------>Type | *base--->Type | *base
-                    |                            ------------    ------------
-                    |                            form-           form-       
-                    |                            size-           size-       
-                    |                            len-            len-        
-                    V                            *dsc-           *dsc-       
-             Object | *next--->Object | *next
-             --------------    --------------
-             class- Head       class- Module
-             name-             name- 
+CONST N = 100;
+TYPE Ptr = POINTER TO Rec;
+     Rec = RECORD n:INTEGER; p,q:Ptr END;
+VAR k:INTEGER;
+    a: ARRAY N OF INTEGER;
+PROCEDURE P(x:INTEGER):INTEGER;
+
+
+*topScope--->Object | *next------->Object | *next
+             --------------        --------------
+             class- Head           class- Const
+             name-                 name-
+             *type-                *type---+
+             *dsc---+              *dsc-    \
+                    |                        \
+                    |                         +--------->Type | *base
+                    |                                    ------------
+                    |                                    form-
+                    |                                    size-
+                    |                                    len-
+                    |                                    *dsc-
+                    |
+                    V
+*topScope--->Object | *next------->Object | *next------->Object | *next------->Object | *next------->Object | *next--------------------------->Object | *next----------------------------->Object | *next------->Object | *next--------------------------->Object | *next
+             --------------        --------------        --------------        --------------        --------------                            --------------                              --------------        --------------                            --------------
+             class- Head           class- Module         class- Module         class- Const          class- Typ                                class- Typ                                  class- Var            class- Var                                class- Const
+             name-                 name- SYSTEM          name- Kernel          name- N               name- Ptr                                 name- Rec                                   name- k               name- a                                   name- P
+             *type-                *type-                *type-                *type---+             *type---+                                 *type---+                                   *type---+             *type---+                                 *type---+
+             *dsc---+              *dsc---+              *dsc---+              *dsc-   |             *dsc-    \                                *dsc-    \                                  *dsc-   |             *dsc-    \                                *dsc-    \
+                    |                     |                     |                      |                       \                                         \                                         |                       \                                         \
+                    |                     |                     |                      |                        +--------->Type | *base--------->---------+--------->Type | *base                  |                        +--------->Type | *base---+               +--------->Type | *base---->---+
+                    |                     |                     |                      |                        |          ------------                              ------------                  |                                   ------------   |                          ------------        |
+                    |                     |                     |                      |                        |          form- Pointer                             form- Record                  |                                   form- Array    |                          form- Proc          |
+                    |                     |                     |                      |                        |          size-                                     size-                         V                                   size-          |                          size-               |
+                    |                     |                     |                      |                        |          len-                                      len-                          |                                   len-           |                          len-                |
+                    |                     |                     |                      |                        |          *dsc-                                     *dsc---+                      |                                   *dsc-          V                          *dsc---+            V
+                    |                     |                     |                      |                        |                                                           |                      |                                                  |                                 |            |
+                    |                     |                     |                      |                        |                                                           |                      |                                                  |                                 V            |
+                    |                     |                     |                      |                        |                                                           |                      |                                                  |                          Object | *next      |
+                    |                     |                     |                      |                        |                                                           |                      +-------------------------->-----------------------+                          --------------      |
+                    |                     |                     |                      |                        |                                                           |                                                                         |                          class- Var          |
+                    |                     |                     |                      V                        ^                                                           |                                                                         |                          name- x             |
+                    |                     |                     |                      |                        |                                                           |                                                                         |                          *type-------->------+
+                    |                     |                     |                      |                        |                                                           |                                                                         |                          *dsc-               |
+                    |                     |                     |                      |                        |                                                           |                                                                         |                                              |
+                    |                     |                     |                      |                        |                                                           V                                                                         |                                              |
+                    |                     |                     |                      |                        |                                                    Object | *next------->Object | *next------->Object | *next                       |                                              |
+                    |                     |                     |                      |                        |                                                    --------------        --------------        --------------                       |                                              |
+                    |                     |                     |                      |                        |                                                    class- Fld            class- Fld            class- Fld                           V                                              |
+                    |                     |                     |                      |                        |                                                    name- n               name- p               name- q                              |                                              V
+                    |                     |                     |                      |                        |                                                    *type---+             *type---+             *type---+                            |                                              |
+                    |                     |                     |                      |                        |                                                    *dsc-   |             *dsc-   |             *dsc-   |                            |                                              |
+                    |                     |                     |                      |                        |                                                            |                     |                     |                            |                                              |
+                    |                     |                     |                      |                        +------------------------------<-----------------------------|-------------------<-+-------------------<-+                            |                                              |
+                    |                     |                     V                      |                                                                                     V                                                                        |                                              |
+                    |                     |              Object | *next                |                                                                                     |                                                                        |                                              |
+                    |                     |              --------------                |                                                                                     |                                                                        |                                              |
+                    |                     |              class- Proc                   +------->--------+---------------------------------<----------------------------------+----------------------------------------<-------------------------------+-------------------------<--------------------+
+                    |                     |              name- Init                                     |
+                    |                     |              *type-                                         |
+                    |                     |              *dsc- 0                                        |
+                    |                     |                                                             |
+                    |                     V                                                             |
+                    |    *System-->Object | *next------->Object | *next                                 |
+                    |              --------------        --------------                                 |
+                    |              class- SProc          class- SFunc                                   V
+                    |              name- COPY            name- ADR                                      |
+                    |              *type-                *type-                                         |
+                    |              *dsc- 0               *dsc- 0                                        |
+                    |                                                                                   |
+                    V                                                                                   |
+*universe--->Object | *next------->Object | *next--------------------------->Object | *next-------------|------------->Object | *next--------------------------->Object | *next
+             --------------        --------------                            --------------             |              --------------                            --------------
+             class- Head           class- Typ                                class- Typ                 |              class- SProc                              class- SFunc
+             name-                 name- REAL                                name- INTEGER              |              name- NEW                                 name- ODD
+             *type-                *type---+                                 *type---+                  |              *type---+                                 *type---+
+             *dsc- 0               *dsc-    \                                *dsc-    \                 |              *dsc-    \                                *dsc-    \
+                                             \                                         \                V                        \                                         \
+                                              +--------->Type | *base                   +--------->Type | *base                   +--------->Type | *base                   +--------->Type | *base
+                                                         ------------                              ------------                              ------------                              ------------
+                                                         form- Real                                form- Int                                 form- NoTyp                               form- Bool
+                                                         size- 4                                   size- 4                                   size- 4                                   size- 1
+                                                         len-                                      len-                                      len-                                      len-
+                                                         *dsc-                                     *dsc-                                     *dsc-                                     *dsc-
+
 
 #endif
