@@ -86,7 +86,7 @@ typedef struct ObjDesc
     int expo; //boolean; denotes if exported with '*' mark
     int rdo; //boolean; denotes if read-only
     Object next; //all variables, types, constants, procedures, parameters, fields are connected through this
-    Object dsc; //module object's dsc holds its variables and types
+    Object dsc; //module object's dsc holds its constants, types and variables, procedures
     Type type; //type of vars, consts etc
     char name[ID_LEN]; //identifier name
     int val; //this is not the value of identifier as seen to the programmer
@@ -1310,73 +1310,81 @@ WhileStatement-a ::= ELSIF expression DO StatementSequence WhileStatement-a
 
 //instruction formats
 //-------------------
-
+//
+//void Put0(int op, int a, int b, int c)
+//
 //Format0:   00u0  --a-  --b-  -op-                    --c-
 //bit num: 32----28----24----20----16----12----08----04----
-
+//
 //op   mnemonic   normal meaning    special meaning if u=1
 //--   --------   --------------    ----------------------
 // 0   MOV a,0,c  Ra := Rc          when c=0, Ra := H; when c=1, Ra := 0000NZCV
 // 1   LSL a,b,c  Ra := Rb << Rc
 // 2   ASR a,b,c  Ra := Rb >> Rc
 // 3   ROR a,b,c  Ra := Rb ror Rc
-
+//
 // 4   AND a,b,c  Ra := Rb & Rc
 // 5   ANN a,b,c  Ra := Rb & ~Rc
 // 6   IOR a,b,c  Ra := Rb or Rc
 // 7   XOR a,b,c  Ra := Rb xor Rc
-
+//
 // 8   ADD a,b,c  Ra := Rb + Rc     ADD considers C bit
 // 9   SUB a,b,c  Ra := Rb – Rc     SUB considers C bit
 //10   MUL a,b,c  Ra := Ra * Rc     MUL does unsigned multiplication
 //11   DIV a,b,c  Ra := Rb div Rc
-
+//
 //12   FAD a,b,c  Ra := Rb + Rc
 //13   FSB a,b,c  Ra := Rb – Rc
 //14   FML a,b,c  Ra := Ra * Rc
 //15   FDV a,b,c  Ra := Rb / Rc
-
+//
 //MUL deposits high 32 bits of product in auxiliary register H
 //DIV deposits remainder in auxiliary register H
 //--------------
-
+//
+//void Put1(int op, int a, int b, int im)
+//void Put1a(int op, int a, int b, int im)
+//
 //Format1:   00uv  --a-  --b-  -op-  <---------im--------->
 //bit num: 32----28----24----20----16----12----08----04----
-
+//
 //immediate value (im) is 16bit inside instructions
 //it is expanded when transfered to 32bit registers
 //if v=0, while expanding im, MSBs of im is filled with 0
 //if v=1, while expanding im, MSBs of im is filled with 1
-
+//
 //op   mnemonic    normal meaning    special meaning if u=1
 //--   --------    --------------    ----------------------
 // 0   MOV a,0,im  Ra := im          Ra := im << 16
 // 1   LSL a,b,im  Ra := Rb << im
 // 2   ASR a,b,im  Ra := Rb >> im
 // 3   ROR a,b,im  Ra := Rb ror im
-
+//
 // 4   AND a,b,im  Ra := Rb & im
 // 5   ANN a,b,im  Ra := Rb & ~im
 // 6   IOR a,b,im  Ra := Rb or im
 // 7   XOR a,b,im  Ra := Rb xor im
-
+//
 // 8   ADD a,b,im  Ra := Rb + im     ADD considers C bit
 // 9   SUB a,b,im  Ra := Rb – im     SUB considers C bit
 //10   MUL a,b,im  Ra := Ra * im     MUL does unsigned multiplication
 //11   DIV a,b,im  Ra := Rb div im
-
+//
 //12   FAD a,b,im  Ra := Rb + im
 //13   FSB a,b,im  Ra := Rb – im
 //14   FML a,b,im  Ra := Ra * im
 //15   FDV a,b,im  Ra := Rb / im
-
+//
 //MUL deposits high 32 bits of product in auxiliary register H
 //DIV deposits remainder in auxiliary register H
 //--------------
-
+//
+//void Put2(int op, int a, int b, int off)
+//op: Ldr = 8, Str = 10
+//
 //Format2:   10uv  --a-  --b-  <------------off----------->
 //bit num: 32----28----24----20----16----12----08----04----
-
+//
 //load:  Ra := Mem[Rb + off]
 //store: Mem[Rb + off] := Ra
 //            uv
@@ -1385,19 +1393,31 @@ WhileStatement-a ::= ELSIF expression DO StatementSequence WhileStatement-a
 //if op = 0b1010 = 10, it means store word
 //if op = 0b1011 = 11, it means store byte
 //--------------
-
+//
+//void Put3(int op, int cond, int off)
+//op: BR = 0, BLR = 1, BC = 2, BL = 3
+//cond: MI = 0, PL = 8,
+//      EQ = 1, NE = 9,
+//      LT = 5, GE = 13,
+//      LE = 6, GT = 14;
+//
 //             u
 //Format3:   110v  cond                          0000  --c-
 //bit num: 32----28----24----20----16----12----08----04----
 //
 //           111v  cond  <---------------off-------------->
 //bit num: 32----28----24----20----16----12----08----04----
-
+//
 //u=0 means branch to addr in Rc
 //u=1 means branch to PC + 1 + off
-//v=0 means link addr is not stored in R15
+//v=0 means link addr is NOT stored in R15
 //v=1 means link addr PC + 1 is stored in R15
-
+//
+//BR  = 0 = (u=0,v=0) = branch to addr in Rc, link addr is NOT stored in R15
+//BLR = 1 = (u=0,v=1) = branch to addr in Rc, link addr PC + 1 is stored in R15
+//BC  = 2 = (u=1,v=0) = branch to PC + 1 + off, link addr is NOT stored in R15
+//BL  = 3 = (u=1,v=1) = branch to PC + 1 + off, link addr PC + 1 is stored in R15
+//
 //cond  mnemonic  meaning           evaluation
 //----  --------  -------           ----------
 //0000  MI        negative(minus)   N
@@ -1407,8 +1427,8 @@ WhileStatement-a ::= ELSIF expression DO StatementSequence WhileStatement-a
 //0100  LS        less or same      ~C|Z
 //0101  LT        less than         N#V
 //0110  LE        less or equal     (N#V)|Z
-//0111            always            true
-
+//0111  --        always            true
+//
 //1000  PL        positive(plus)    ~N
 //1001  NE        not equal         ~Z
 //1010  CC        carry clear       ~C
@@ -1416,5 +1436,37 @@ WhileStatement-a ::= ELSIF expression DO StatementSequence WhileStatement-a
 //1100  HI        high              ~(~C|Z)
 //1101  GE        greater or equal  ~(N#V)
 //1110  GT        greater than      ~((N#V)|Z)
-//1111            never             flase
+//1111  --        never             flase
+//--------------
 
+#if 0
+
+*topScope--->Object | *next--->Object | *next
+             --------------    --------------
+             class- Head       class- Module
+             name-             name- 
+             *type-            *type---.
+             *dsc---.          *dsc-    \   
+                    |                    `------>Type | *base--->Type | *base
+                    |                            ------------    ------------
+                    |                            form-           form-       
+                    |                            size-           size-       
+                    |                            len-            len-        
+                    V                            *dsc-           *dsc-       
+             Object | *next--->Object | *next
+             --------------    --------------
+             class- Head       class- Module
+             name-             name- 
+             *dsc---.          *dsc-    \   
+                    |                    `------>Type | *base--->Type | *base
+                    |                            ------------    ------------
+                    |                            form-           form-       
+                    |                            size-           size-       
+                    |                            len-            len-        
+                    V                            *dsc-           *dsc-       
+             Object | *next--->Object | *next
+             --------------    --------------
+             class- Head       class- Module
+             name-             name- 
+
+#endif

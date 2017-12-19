@@ -2437,9 +2437,9 @@ void Close(char* modid, int key, int nofent)
     }
     else
     {
-        Put2(Ldr, LNK, SP, 0);
-        Put1(Add, SP, SP, 4);
-        Put3(BR, 7, LNK);
+        Put2(Ldr, LNK, SP, 0); //pop to link reg
+        Put1(Add, SP, SP, 4); //reduce stack
+        Put3(BR, 7, LNK); //jump to link reg
     }
     obj = topScope->next;
     nofimps = 0;
@@ -2451,6 +2451,7 @@ void Close(char* modid, int key, int nofent)
         {
             nofimps++;//count imports
         }
+        //these are conditions for being a command procedure
         else if( (obj->exno != 0) && (obj->class == Const) && (obj->type->form == Proc)
                  && (obj->type->nofpar == 0) && (obj->type->base == noType) )
         {
