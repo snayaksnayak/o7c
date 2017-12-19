@@ -73,7 +73,7 @@ int WordSize = 4,
     LE = 6, GT = 14;
 
 int version;  //0 = RISC-0, 1 = RISC-5
-int entry;   //main entry point
+int entry;   //module entry point
 int RH;  //available registers R[0] ... R[H-1]
 int curSB;  //current static base in SB
 int frame;  //frame offset changed in SaveRegs and RestoreRegs
@@ -220,7 +220,7 @@ void invalSB()
     curSB = 1;
 }
 
-//fix offset at code[at] with with
+//fix offset at 'code[at]' with 'with'
 void fix(int at, int with)
 {
     code[at] = ((code[at] >> 24) * C24) + (with & 0xFFFFFF);
@@ -2339,17 +2339,18 @@ void SetDataSize(int dc)
 
 void Header()
 {
-    entry = pc*4;
-    if( version == 0 )
+    entry = pc*4; //for RISC-5, pc=0, entry=0
+
+    if( version == 0 ) //RISC-0
     {
         code[0] = 0x0E7000000-1 + pc;
         Put1a(Mov, SB, 0, VarOrg0);
-        Put1a(Mov, SP, 0, StkOrg0);//RISC-0
+        Put1a(Mov, SP, 0, StkOrg0);
     }
-    else
+    else //RISC-5
     {
-        Put1(Sub, SP, SP, 4);
-        Put2(Str, LNK, SP, 0);
+        Put1(Sub, SP, SP, 4); //make space for link reg value
+        Put2(Str, LNK, SP, 0); //store link reg value there
         invalSB();
     }
 }
@@ -2441,7 +2442,9 @@ void Close(char* modid, int key, int nofent)
         Put1(Add, SP, SP, 4); //reduce stack
         Put3(BR, 7, LNK); //jump to link reg
     }
-    obj = topScope->next;
+
+    //compute total size of object code to be written to *.rsc file
+    obj = topScope->next; //jump over Head
     nofimps = 0;
     comsize = 4;
     nofptrs = 0;
@@ -2449,7 +2452,7 @@ void Close(char* modid, int key, int nofent)
     {
         if( (obj->class == Mod) && (obj->dsc != System) )
         {
-            nofimps++;//count imports
+            nofimps++; //count imports excluding SYSTEM
         }
         //these are conditions for being a command procedure
         else if( (obj->exno != 0) && (obj->class == Const) && (obj->type->form == Proc)
@@ -2460,73 +2463,104 @@ void Close(char* modid, int key, int nofent)
             {
                 i++;
             }
-            i = (i+4) / 4 * 4; //why?
-            comsize = comsize + i+4;
+            i = (i+4) / 4 * 4; //keep space for '\0'; also make 4byte aligned
+            comsize = comsize + i+4; //allocate one more 4byte per command name
         }
         else if( obj->class == Var )
         {
-            nofptrs = nofptrs + NofPtrs(obj->type);//count pointers
+            nofptrs = nofptrs + NofPtrs(obj->type); //count pointers
         }
         obj = obj->next;
     }
-    size = varsize + strx + comsize + (pc + nofimps + nofent + nofptrs + 1)*4;//varsize includes type descriptors
+    size = varsize + strx + comsize + (pc + nofimps + nofent + nofptrs + 1)*4; //varsize includes type descriptors; pc denotes code length
 
-    MakeFileName(name, modid, ".rsc"); //write code file
+    //create *.rsc file
+    MakeFileName(name, modid, ".rsc");
     R = fopen(name, "wb");
     if(R == NULL)
     {
         printf("can't create object file\n");
         exit(0);
     }
-    WriteString(R, modid);
-    WriteInt(R, key);
-    WriteByte(R, version);
-    WriteInt(R, size);
+
+	//write header
+    WriteString(R, modid); //first write module name with '\0'
+    WriteInt(R, key); //4byte for key
+    WriteByte(R, version); //1byte for version
+    WriteInt(R, size); //4byte for size
+
+	//write imported module names excluding SYSTEM
     obj = topScope->next;
-    while( (obj != NIL) && (obj->class == Mod) )//imports
+    while( (obj != NIL) && (obj->class == Mod) )
     {
         if( obj->dsc != System )
         {
-            WriteString(R, ((Module)obj)->orgname);
-            WriteInt(R, obj->val);
+            WriteString(R, ((Module)obj)->orgname); //original module name with '\0'
+            WriteInt(R, obj->val); //its val in 4byte
         }
         obj = obj->next;
     }
+
+	//terminator 1byte
     Write(R, 0x0);
-    WriteInt(R, tdx*4);
+
+	//type descriptor table size
+    WriteInt(R, tdx*4); //4byte for type descriptor table size i.e. tdx*4
+
+	//write type descriptors
     i = 0;
     while( i < tdx )
     {
-        WriteInt(R, data[i]); //type descriptors
+        WriteInt(R, data[i]); //4byte for one type descriptor
         i++;
     }
-    WriteInt(R, varsize - tdx*4); //data
-    WriteInt(R, strx); //write length for all string constants contained in ORG _str[]
-    for (i = 0; i <= strx-1; i++) //now write those strings from _str[]
+
+	//4byte for data size
+    WriteInt(R, varsize - tdx*4); //varsize includes type descriptors
+
+	//4byte to write length of all string constants contained in ORG _str[]
+    WriteInt(R, strx);
+
+    //now write those strings from _str[]
+    for (i = 0; i <= strx-1; i++)
     {
         Write(R, _str[i]);
     }
-    WriteInt(R, pc); //write code length
+
+	//4byte to write code length
+    WriteInt(R, pc);
+
+    //write the code
     for(i = 0; i <= pc-1; i++)
     {
-        WriteInt(R, code[i]); //write the code
+        WriteInt(R, code[i]); //code[] is of type int
     }
+
+	//write command names and its val
     obj = topScope->next;
-    while( obj != NIL )//commands
+    while( obj != NIL )
     {
         if( (obj->exno != 0) && (obj->class == Const) && (obj->type->form == Proc) &&
                 (obj->type->nofpar == 0) && (obj->type->base == noType) )
         {
-            WriteString(R, obj->name);
-            WriteInt(R, obj->val);
+            WriteString(R, obj->name); //command name with '\0'
+            WriteInt(R, obj->val); //its val in 4byte
         }
         obj = obj->next;
     }
+
+    //terminator 1byte
     Write(R, 0x0);
+
+	//4byte for number of entry points
     WriteInt(R, nofent);
+
+	//4byte for entry
     WriteInt(R, entry);
+
+	//entries
     obj = topScope->next;
-    while( obj != NIL )//entries
+    while( obj != NIL )
     {
         if( obj->exno != 0 )
         {
@@ -2548,8 +2582,10 @@ void Close(char* modid, int key, int nofent)
         }
         obj = obj->next;
     }
+
+	//pointer variables
     obj = topScope->next;
-    while( obj != NIL )//pointer variables
+    while( obj != NIL )
     {
         if( obj->class == Var )
         {
@@ -2557,12 +2593,16 @@ void Close(char* modid, int key, int nofent)
         }
         obj = obj->next;
     }
+
     WriteInt(R, -1);
     WriteInt(R, fixorgP);
     WriteInt(R, fixorgD);
     WriteInt(R, fixorgT);
     WriteInt(R, entry);
-    Write(R, 'O'); //This is capital O (ascii 79), not zero
+
+    //1byte for O; this is capital O (ascii 79), not zero
+    Write(R, 'O');
+
     fclose(R);
 }
 

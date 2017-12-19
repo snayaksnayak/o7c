@@ -1501,7 +1501,7 @@ PROCEDURE P(x:INTEGER):INTEGER;
                     |                     |              class- Proc                   +------->--------+---------------------------------<----------------------------------+----------------------------------------<-------------------------------+-------------------------<--------------------+
                     |                     |              name- Init                                     |
                     |                     |              *type-                                         |
-                    |                     |              *dsc- 0                                        |
+                    |                     |              *dsc-                                          |
                     |                     |                                                             |
                     |                     V                                                             |
                     |    *System-->Object | *next------->Object | *next                                 |
@@ -1509,7 +1509,7 @@ PROCEDURE P(x:INTEGER):INTEGER;
                     |              class- SProc          class- SFunc                                   V
                     |              name- COPY            name- ADR                                      |
                     |              *type-                *type-                                         |
-                    |              *dsc- 0               *dsc- 0                                        |
+                    |              *dsc-                 *dsc-                                          |
                     |                                                                                   |
                     V                                                                                   |
 *universe--->Object | *next------->Object | *next--------------------------->Object | *next-------------|------------->Object | *next--------------------------->Object | *next
@@ -1517,7 +1517,7 @@ PROCEDURE P(x:INTEGER):INTEGER;
              class- Head           class- Typ                                class- Typ                 |              class- SProc                              class- SFunc
              name-                 name- REAL                                name- INTEGER              |              name- NEW                                 name- ODD
              *type-                *type---+                                 *type---+                  |              *type---+                                 *type---+
-             *dsc- 0               *dsc-    \                                *dsc-    \                 |              *dsc-    \                                *dsc-    \
+             *dsc-                 *dsc-    \                                *dsc-    \                 |              *dsc-    \                                *dsc-    \
                                              \                                         \                V                        \                                         \
                                               +--------->Type | *base                   +--------->Type | *base                   +--------->Type | *base                   +--------->Type | *base
                                                          ------------                              ------------                              ------------                              ------------
@@ -1528,3 +1528,22 @@ PROCEDURE P(x:INTEGER):INTEGER;
 
 
 #endif
+
+//say, loader does BLR
+//it says, branch to module entry found in Rc, store PC+4 in R15(link)
+
+//module now does
+//Put1(Sub, SP, SP, 4); //make space for link reg value
+//Put2(Str, LNK, SP, 0); //store link reg value there
+//do calculations
+
+//Procedure calls use a branch and link (BL) instruction. Parameters are loaded into registers prior to
+//the call and pushed on the stack after the call. Every parameter occupies a multiple of 4 bytes. In
+//the case of value parameters the value is loaded, and in the case of VAR-parameters, the
+//variable's address is loaded.
+
+//now module does
+//Put2(Ldr, LNK, SP, 0); //pop to link reg
+//Put1(Add, SP, SP, 4); //reduce stack
+//Put3(BR, 7, LNK); //jump to link reg
+
