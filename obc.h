@@ -622,7 +622,7 @@ designator-a ::= selector designator-a
 #              IN IS ')' '..' ',' THEN OF DO TO BY ';' ELSIF END ELSE UNTIL
 #              RETURN '}' ']' '|'
 
-//digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9".
+//digit = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
 		//digits 0 to 9
 		//remember that we hadn't defined it in Oberon7 grammar
 		//hence its First & Follow set has not been generated.
@@ -931,7 +931,7 @@ length ::= ConstExpression
 # start set:   '+' '-' digit NIL TRUE FALSE '(' '~' '"' '{' letter
 # follow set:  ',' OF
 
-//letter = "A" | "B" | ... | "Z" | "a" | "b" | ... | "z".
+//letter = 'A' | 'B' | ... | 'Z' | 'a' | 'b' | ... | 'z'
 		//ex. capital and small letters
 		//remember that we hadn't defined it in Oberon7 grammar
 		//hence its First & Follow set has not been generated.

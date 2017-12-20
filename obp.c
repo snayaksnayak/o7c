@@ -85,7 +85,7 @@ void CheckExport(int *expo)
 
 void qualident(Object *obj)
 {
-    //qualident = [ident "."] ident.
+    //qualident = [ident '.'] ident
     *obj = thisObj();
     Get(&sym);
     if( *obj == NIL )
@@ -257,12 +257,12 @@ void selector(Item *x)
     Item y;
     Object obj;
 
-    //selector = "." ident | "[" ExpList "]" | "^" | "(" qualident ")".
+    //selector = '.' ident | '[' ExpList ']' | '^' | '(' qualident ')'
     while( (sym == LBRAK) || (sym == PERIOD) || (sym == ARROW)
             || ((sym == LPAREN) && (x->type->form == Record || x->type->form == Pointer)) )
     {
 
-        //ExpList = expression {"," expression}.
+        //ExpList = expression {',' expression}
         if( sym == LBRAK )
         {
             do
@@ -472,8 +472,8 @@ void ParamList(Item *x)
     par = x->type->dsc;
     n = 0;
 
-    //ActualParameters = "(" [ExpList] ")" .
-    //ExpList = expression {"," expression}.
+    //ActualParameters = '(' [ExpList] ')'
+    //ExpList = expression {',' expression}
     if( sym != RPAREN )
     {
         Parameter(par);
@@ -671,7 +671,7 @@ void element(Item *x)
 {
     Item y;
 
-    //element = expression [".." expression].
+    //element = expression ['..' expression]
     expression(x);
     CheckSetVal(x);
     if( sym == UPTO )
@@ -692,7 +692,7 @@ void set(Item *x)
 {
     Item y;
 
-    //set = "{" [element {"," element}] "}".
+    //set = '{' [element {',' element}] '}'
     if( sym >= IF )
     {
         if( sym != RBRACE )
@@ -703,7 +703,7 @@ void set(Item *x)
     }
     else
     {
-		//element = expression [".." expression].
+		//element = expression ['..' expression]
         element(x);
         while( (sym < RPAREN) || (sym > RBRACE) ) //why?
         {
@@ -739,8 +739,8 @@ void factor(Item *x)
         while(!((sym >= CHAR) && (sym <= IDENT)));
     }
 
-    //factor = number | string | NIL | TRUE | FALSE | set | designator [ActualParameters] | "(" expression ")" | "~" factor.
-    //designator = qualident {selector}.
+    //factor = number | string | NIL | TRUE | FALSE | set | designator [ActualParameters] | '(' expression ')' | '~' factor
+    //designator = qualident {selector}
     if( sym == IDENT )
     {
         qualident(&obj);
@@ -838,11 +838,11 @@ void term(Item *x)
     Item y;
     int op, f;
 
-    //term = factor {MulOperator factor}.
+    //term = factor {MulOperator factor}
     factor(x);
     f = x->type->form;
 
-    //MulOperator = "*" | "/" | DIV | MOD | "&".
+    //MulOperator = '*' | '/' | DIV | MOD | '&'
     while( (sym >= MUL) && (sym <= AND) )
     {
         op = sym;
@@ -916,7 +916,7 @@ void SimpleExpression(Item *x)
     Item y;
     int op;
 
-    //SimpleExpression = ["+" | "-"] term {AddOperator term}.
+    //SimpleExpression = ['+' | '-'] term {AddOperator term}
     if( sym == MINUS )
     {
         Get(&sym);
@@ -940,7 +940,7 @@ void SimpleExpression(Item *x)
         term(x);
     }
 
-    //AddOperator = "+" | "-" | OR.
+    //AddOperator = '+' | '-' | OR
     while( (sym >= PLUS) && (sym <= OR) )
     {
         op = sym;
@@ -982,10 +982,10 @@ void expression(Item *x)
     Object obj=0;
     int rel, xf, yf;
 
-    //expression = SimpleExpression [relation SimpleExpression].
+    //expression = SimpleExpression [relation SimpleExpression]
     SimpleExpression(x);
 
-    //relation = "=" | "#" | "<" | "<=" | ">" | ">=" | IN | IS.
+    //relation = '=' | '#' | '<' | '<=' | '>' | '>=' | IN | IS
     if( (sym >= EQL) && (sym <= GEQ) ) //EQL = 9, NEQ = 10, LSR = 11, LEQ = 12, GTR = 13, GEQ = 14
     {
         rel = sym; //remember the relational operator
@@ -1284,11 +1284,11 @@ void StatSequence()
 
         }
 
-//StatementSequence = statement {";" statement}.
-//statement = [assignment | ProcedureCall | IfStatement | CaseStatement | WhileStatement | RepeatStatement | ForStatement].
-//assignment = designator ":=" expression.
-//designator = qualident {selector}.
-//selector = "." ident | "[" ExpList "]" | "^" | "(" qualident ")".
+//StatementSequence = statement {';' statement}
+//statement = [assignment | ProcedureCall | IfStatement | CaseStatement | WhileStatement | RepeatStatement | ForStatement]
+//assignment = designator ':=' expression
+//designator = qualident {selector}
+//selector = '.' ident | '[' ExpList ']' | '^' | '(' qualident ')'
         if( sym == IDENT )
         {
             qualident(&obj);
@@ -1300,7 +1300,7 @@ void StatSequence()
             else
             {
                 selector(&x);
-                //assignment = designator ":=" expression.
+                //assignment = designator ':=' expression
                 if( sym == BECOMES ) //assignment
                 {
                     Get(&sym);
@@ -1389,7 +1389,7 @@ void StatSequence()
             }
 
         }
-//IfStatement = IF expression THEN StatementSequence {ELSIF expression THEN StatementSequence} [ELSE StatementSequence] END.
+//IfStatement = IF expression THEN StatementSequence {ELSIF expression THEN StatementSequence} [ELSE StatementSequence] END
         else if(
 
             sym == IF
@@ -1444,7 +1444,7 @@ void StatSequence()
 
 
         }
-//WhileStatement = WHILE expression DO StatementSequence {ELSIF expression DO StatementSequence} END.
+//WhileStatement = WHILE expression DO StatementSequence {ELSIF expression DO StatementSequence} END
         else if(
 
             sym == WHILE
@@ -1485,7 +1485,7 @@ void StatSequence()
 
 
         }
-//RepeatStatement = REPEAT StatementSequence UNTIL expression.
+//RepeatStatement = REPEAT StatementSequence UNTIL expression
         else if(
 
             sym == REPEAT
@@ -1513,7 +1513,7 @@ void StatSequence()
 
 
         }
-//ForStatement = FOR ident ":=" expression TO expression [BY ConstExpression] DO StatementSequence END.
+//ForStatement = FOR ident ':=' expression TO expression [BY ConstExpression] DO StatementSequence END
         else if( sym == FOR )
         {
             Get(&sym);
@@ -1574,11 +1574,11 @@ void StatSequence()
 
 
         }
-//CaseStatement = CASE expression OF case {"|" case} END.
-//case = [CaseLabelList ":" StatementSequence].
-//CaseLabelList = LabelRange {"," LabelRange}.
-//LabelRange = label [".." label].
-//label = integer | string | qualident.
+//CaseStatement = CASE expression OF case {'|' case} END
+//case = [CaseLabelList ':' StatementSequence]
+//CaseLabelList = LabelRange {',' LabelRange}
+//LabelRange = label ['..' label]
+//label = integer | string | qualident
         else if( sym == CASE )
         {
             Get(&sym);
@@ -1648,8 +1648,8 @@ void IdentList(int class, Object *first)
 {
     Object obj=0;
 
-//IdentList = identdef {"," identdef}.
-//identdef = ident ["*"].
+//IdentList = identdef {',' identdef}
+//identdef = ident ['*']
     if( sym == IDENT )
     {
         NewObj(first, id, class);
@@ -1669,7 +1669,7 @@ void IdentList(int class, Object *first)
                 Mark("ident?");
             }
         }
-        //VariableDeclaration = IdentList ":" type.
+        //VariableDeclaration = IdentList ':' type
         if( sym == COLON )
         {
             Get(&sym);
@@ -1692,7 +1692,7 @@ void ArrayType(Type *type)
     int len;
     NEW((void **)&typ, sizeof(TypeDesc));
     typ->form = NoTyp;
-    //ArrayType = ARRAY length {"," length} OF type.
+    //ArrayType = ARRAY length {',' length} OF type
     expression(&x);
     if( (x.mode == Const) && (x.type->form == Int) && (x.a >= 0) )
     {
@@ -1742,7 +1742,7 @@ void RecordType(Type *type)
     typ->nofpar = 0;
     offset = 0;
     bot = NIL;
-    //RecordType = RECORD ["(" BaseType ")"] [FieldListSequence] END.
+    //RecordType = RECORD ['(' BaseType ')'] [FieldListSequence] END
     if( sym == LPAREN )
     {
         Get(&sym);//record extension
@@ -1750,7 +1750,7 @@ void RecordType(Type *type)
         {
             Mark("extension of local types not implemented");
         }
-        //BaseType = qualident.
+        //BaseType = qualident
         if( sym == IDENT )
         {
             qualident(&base);
@@ -1783,10 +1783,10 @@ void RecordType(Type *type)
 
 
 
-    //FieldListSequence = FieldList {";" FieldList}.
-    //FieldList = IdentList ":" type.
-    //IdentList = identdef {"," identdef}.
-    //identdef = ident ["*"].
+    //FieldListSequence = FieldList {';' FieldList}
+    //FieldList = IdentList ':' type
+    //IdentList = identdef {',' identdef}
+    //identdef = ident ['*']
     while( sym == IDENT )//fields
     {
         n = 0;
@@ -1867,8 +1867,8 @@ void FPSection(int *adr, int *nofpar)
     int cl;
     int rdo;
 
-    //FPSection = [VAR] ident {"," ident} ":" FormalType.
-    //FormalType = {ARRAY OF} qualident.
+    //FPSection = [VAR] ident {',' ident} ':' FormalType
+    //FormalType = {ARRAY OF} qualident
 
     if( sym == VAR )
     {
@@ -1880,8 +1880,8 @@ void FPSection(int *adr, int *nofpar)
         cl = Var;
     }
 
-    //IdentList = identdef {"," identdef}.
-    //identdef = ident ["*"].
+    //IdentList = identdef {',' identdef}
+    //identdef = ident ['*']
 
     IdentList(cl, &first); //why? FPSection doesn't expect a IdentList...
     FormalType(&tp, 0);
@@ -1930,8 +1930,8 @@ void ProcedureType(Type ptype, int *parblksize)
     ptype->nofpar = 0;
     ptype->dsc = NIL;
 
-    //ProcedureType = PROCEDURE [FormalParameters].
-    //FormalParameters = "(" [FPSection {";" FPSection}] ")" [":" qualident].
+    //ProcedureType = PROCEDURE [FormalParameters]
+    //FormalParameters = '(' [FPSection {';' FPSection}] ')' [':' qualident]
 
     if( sym == LPAREN )
     {
@@ -1989,7 +1989,7 @@ void FormalType(Type *typ, int dim)
     Object obj=0;
     int dmy;
 
-    //FormalType = {ARRAY OF} qualident | ProcedureType.
+    //FormalType = {ARRAY OF} qualident | ProcedureType
     if( sym == IDENT )
     {
         qualident(&obj);
@@ -2065,8 +2065,8 @@ void _Type(Type *type)
     }
 
 
-    //type = qualident | ArrayType | RecordType | PointerType | ProcedureType.
-    //qualident = [ident "."] ident.
+    //type = qualident | ArrayType | RecordType | PointerType | ProcedureType
+    //qualident = [ident '.'] ident
 
     if( sym == IDENT )
     {
@@ -2084,14 +2084,14 @@ void _Type(Type *type)
         }
 
     }
-    //ArrayType = ARRAY length {"," length} OF type.
+    //ArrayType = ARRAY length {',' length} OF type
     else if( sym == ARRAY )
     {
         Get(&sym);
         ArrayType(type);
 
     }
-    //RecordType = RECORD ["(" BaseType ")"] [FieldListSequence] END.
+    //RecordType = RECORD ['(' BaseType ')'] [FieldListSequence] END
     else if( sym == RECORD )
     {
         Get(&sym);
@@ -2101,7 +2101,7 @@ void _Type(Type *type)
 
 
     }
-    //PointerType = POINTER TO type.
+    //PointerType = POINTER TO type
     else if( sym == POINTER )
     {
         Get(&sym);
@@ -2152,7 +2152,7 @@ void _Type(Type *type)
         }
 
     }
-    //ProcedureType = PROCEDURE [FormalParameters].
+    //ProcedureType = PROCEDURE [FormalParameters]
     else if( sym == PROCEDURE )
     {
         Get(&sym);
@@ -2184,9 +2184,9 @@ void ProcedureDecl()
     int locblksize, parblksize, L;
     int internal = FALSE;
 
-    //DeclarationSequence = [CONST {ConstDeclaration ";"}] [TYPE {TypeDeclaration ";"}] [VAR {VariableDeclaration ";"}] {ProcedureDeclaration ";"}.
-    //ProcedureDeclaration = ProcedureHeading ";" ProcedureBody ident.
-    //ProcedureHeading = PROCEDURE identdef [FormalParameters].
+    //DeclarationSequence = [CONST {ConstDeclaration ';'}] [TYPE {TypeDeclaration ';'}] [VAR {VariableDeclaration ';'}] {ProcedureDeclaration ';'}
+    //ProcedureDeclaration = ProcedureHeading ';' ProcedureBody ident
+    //ProcedureHeading = PROCEDURE identdef [FormalParameters]
     Get(&sym); //we found token PROCEEDURE, so Get(); see _Module() function.
 
     if( sym == MUL )
@@ -2196,7 +2196,7 @@ void ProcedureDecl()
     }
 
     //PROCEDURE already consumed in Declarations()
-    //identdef = ident ["*"].
+    //identdef = ident ['*']
     if( sym == IDENT )
     {
         CopyId(procid);
@@ -2221,16 +2221,16 @@ void ProcedureDecl()
 
 
 
-//FormalParameters = "(" [FPSection {";" FPSection}] ")" [":" qualident].
-//FPSection = [VAR] ident {"," ident} ":" FormalType.
-//FormalType = {ARRAY OF} qualident.
+//FormalParameters = '(' [FPSection {';' FPSection}] ')' [':' qualident]
+//FPSection = [VAR] ident {',' ident} ':' FormalType
+//FormalType = {ARRAY OF} qualident
         ProcedureType(type, &parblksize);  //formal parameter list
-//ProcedureDeclaration = ProcedureHeading ";" ProcedureBody ident.
+//ProcedureDeclaration = ProcedureHeading ';' ProcedureBody ident
         Check(SEMICOLON, "no ;"); //above semicolon
         locblksize = parblksize;
 
 
-        //ProcedureBody = DeclarationSequence [BEGIN StatementSequence] [RETURN expression] END.
+        //ProcedureBody = DeclarationSequence [BEGIN StatementSequence] [RETURN expression] END
         Declarations(&locblksize); //above DeclarationSequence
 
         proc->val = Here() * 4;
@@ -2254,7 +2254,7 @@ void ProcedureDecl()
 
         Enter(parblksize, locblksize, internal);
 
-        //ProcedureBody = DeclarationSequence [BEGIN StatementSequence] [RETURN expression] END.
+        //ProcedureBody = DeclarationSequence [BEGIN StatementSequence] [RETURN expression] END
         if( sym == BEGIN )
         {
             Get(&sym);
@@ -2328,20 +2328,20 @@ void Declarations(int *varsize)
         while(!( (sym >= CONST) || (sym == END) || (sym == RETURN) ));
     }
 
-    //DeclarationSequence = [CONST {ConstDeclaration ";"}] [TYPE {TypeDeclaration ";"}] [VAR {VariableDeclaration ";"}] {ProcedureDeclaration ";"}.
+    //DeclarationSequence = [CONST {ConstDeclaration ';'}] [TYPE {TypeDeclaration ';'}] [VAR {VariableDeclaration ';'}] {ProcedureDeclaration ';'}
     if( sym == CONST )
     {
         Get(&sym);
 
-        //ConstDeclaration = identdef "=" ConstExpression.
-        //ConstExpression = expression.
-        //identdef = ident ["*"].
+        //ConstDeclaration = identdef '=' ConstExpression
+        //ConstExpression = expression
+        //identdef = ident ['*']
         while( sym == IDENT )
         {
             CopyId(id); //get the const symbol
             Get(&sym);
-            CheckExport(&expo); //consumes "*"
-            if( sym == EQL ) //consumes "="
+            CheckExport(&expo); //consumes '*'
+            if( sym == EQL ) //consumes '='
             {
                 Get(&sym);
             }
@@ -2376,7 +2376,7 @@ void Declarations(int *varsize)
                 Mark("expression not constant");
                 obj->type = intType;
             }
-            Check(SEMICOLON, "; missing"); //consumes ";"
+            Check(SEMICOLON, "; missing"); //consumes ';'
         }
     }
 //srinu
@@ -2384,13 +2384,13 @@ void Declarations(int *varsize)
     {
         Get(&sym);
 
-        //TypeDeclaration = identdef "=" type.
+        //TypeDeclaration = identdef '=' type
         while( sym == IDENT )
         {
             CopyId(id); //get the type symbol
             Get(&sym);
-            CheckExport(&expo);//consumes "*"
-            if( sym == EQL ) //consumes "="
+            CheckExport(&expo);//consumes '*'
+            if( sym == EQL ) //consumes '='
             {
                 Get(&sym);
             }
@@ -2442,7 +2442,7 @@ void Declarations(int *varsize)
                 }
             }
 
-            Check(SEMICOLON, "; missing"); //consumes ";"
+            Check(SEMICOLON, "; missing"); //consumes ';'
         }
     }
 
@@ -2450,7 +2450,7 @@ void Declarations(int *varsize)
     {
         Get(&sym);
 
-        //VariableDeclaration = IdentList ":" type.
+        //VariableDeclaration = IdentList ':' type
         while( sym == IDENT )
         {
             IdentList(Var, &first); //see all variables declared like aVar, bVar: INTEGER
@@ -2474,7 +2474,7 @@ void Declarations(int *varsize)
                 }
                 obj = obj->next;
             }
-            Check(SEMICOLON, "; missing");//consumes ";"
+            Check(SEMICOLON, "; missing");//consumes ';'
         }
     }
 
@@ -2505,7 +2505,7 @@ void _Module()
 
     Get(&sym); //This is the first Get(); after this whenever a token is consumed, immediately do another Get()!
 
-    //module = MODULE ident ";" [ImportList] DeclarationSequence [BEGIN StatementSequence] END ident "." .
+    //module = MODULE ident ';' [ImportList] DeclarationSequence [BEGIN StatementSequence] END ident '.'
     if( sym == MODULE ) //we are looking for token MODULE,
     {
         Get(&sym); //we found the token MODULE, so do an Get()
@@ -2539,7 +2539,7 @@ void _Module()
         exno = 1;
         key = 0;
 
-        //ImportList = IMPORT import {"," import} ";".
+        //ImportList = IMPORT import {',' import} ';'
         if( sym == IMPORT )
         {
             Get(&sym);
@@ -2549,7 +2549,7 @@ void _Module()
                 CopyId(impid); //copy original name of imported module
                 Get(&sym);
 
-                //import = ident [":=" ident].
+                //import = ident [':=' ident]
                 if( sym == BECOMES )
                 {
                     Get(&sym);
@@ -2596,7 +2596,7 @@ void _Module()
 
         Header();
 
-        //module = MODULE ident ";" [ImportList] DeclarationSequence [BEGIN StatementSequence] END ident "." .
+        //module = MODULE ident ';' [ImportList] DeclarationSequence [BEGIN StatementSequence] END ident '.'
         if( sym == BEGIN )
         {
             Get(&sym);
@@ -2618,7 +2618,7 @@ void _Module()
             Mark("identifier missing");
         }
 
-        if( sym != PERIOD ) //consumes "." applearing at the end of "... END Modname."
+        if( sym != PERIOD ) //consumes '.' applearing at the end of "... END Modname."
         {
             Mark("period missing");
         }
