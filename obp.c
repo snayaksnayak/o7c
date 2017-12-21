@@ -2195,60 +2195,73 @@ void ProcedureDecl()
         internal = TRUE; //why?
     }
 
-    //PROCEDURE already consumed in Declarations()
+    //PROCEDURE keyword already consumed in _Module()
     //identdef = ident ['*']
     if( sym == IDENT )
     {
         CopyId(procid);
         Get(&sym);
+        
+        //create procedure object
         NewObj(&proc, id, Const);
+        
+        //create procedure type
         parblksize = 4;
         NEW((void **)&type, sizeof(TypeDesc));
         type->form = Proc;
         type->size = WordSize;
         proc->type = type;
-        CheckExport(&proc->expo);
+        
+        CheckExport(&proc->expo); //consumes '*'
+        
+        //increment exno for procedures
         if( proc->expo )
         {
             proc->exno = exno;
             exno++;
         }
+        
+        //create a new scope for local variables
         OpenScope();
-        level++;
+        
+        level++; //we have gone one level up, i.e. entered into a procedure scope, no more in module scope
+        
         proc->val = -1;
-        type->base = noType;
-
-
-
+        type->base = noType; //assume no result type
 
 //FormalParameters = '(' [FPSection {';' FPSection}] ')' [':' qualident]
 //FPSection = [VAR] ident {',' ident} ':' FormalType
 //FormalType = {ARRAY OF} qualident
-        ProcedureType(type, &parblksize);  //formal parameter list
+        ProcedureType(type, &parblksize);  //formal parameter list and result type
+        
 //ProcedureDeclaration = ProcedureHeading ';' ProcedureBody ident
-        Check(SEMICOLON, "no ;"); //above semicolon
-        locblksize = parblksize;
+        Check(SEMICOLON, "no ;"); //consumes above semicolon
+        locblksize = parblksize; //i.e. 4
 
+//ProcedureBody = DeclarationSequence [BEGIN StatementSequence] [RETURN expression] END
+        Declarations(&locblksize); //consume above DeclarationSequence, get size of variables found in local scope
 
-        //ProcedureBody = DeclarationSequence [BEGIN StatementSequence] [RETURN expression] END
-        Declarations(&locblksize); //above DeclarationSequence
-
-        proc->val = Here() * 4;
+        proc->val = Here() * 4; //procedure entry address
         proc->type->dsc = topScope->next;
 
         //if PROCEDURE found, do recursive call
         if( sym == PROCEDURE )
         {
-            L = 0;
-            FJump(&L);
+			//address of this new nested procedure is not known,
+            L = 0; //so now keep it 0
+            //generate code for the jump into this procedure
+            FJump(&L); //and bring back the address of code in L, which needs fix later
             do
             {
                 ProcedureDecl();
-                Check(SEMICOLON, "no ;");//why? which semicolon?
+//DeclarationSequence = [ CONST { ConstDeclaration ';' } ] [ TYPE { TypeDeclaration ';' } ] [ VAR { VariableDeclaration ';' } ] { ProcedureDeclaration ';' }
+                Check(SEMICOLON, "no ;");//why? which semicolon? see above grammar production, every procedure declaration ends with a ';'
             }
-            while(!( sym != PROCEDURE ));
+            while(sym == PROCEDURE);
+            
+            //now fix the code at L 
             FixLink(L);
-            proc->val = Here() * 4;
+            proc->val = Here() * 4; //srinu
             proc->type->dsc = topScope->next;
         }
 
@@ -2379,7 +2392,7 @@ void Declarations(int *varsize)
             Check(SEMICOLON, "; missing"); //consumes ';'
         }
     }
-//srinu
+
     if( sym == TYPE )
     {
         Get(&sym);
@@ -2426,19 +2439,20 @@ void Declarations(int *varsize)
 
             if( tp->form == Record )
             {
-                ptbase = pbsList;//check whether this is base of a pointer type; search and fixup
+                ptbase = pbsList; //check whether this is base of a pointer type; search and fixup
                 while( ptbase != NIL )
                 {
                     if( strcmp(obj->name, ptbase->name) == 0 )
                     {
-                        ptbase->type->base = obj->type;
+                        ptbase->type->base = obj->type; //fix base type of pointer types
                     }
                     ptbase = ptbase->next;
                 }
 
+				//if a record is declared directly in a module, not inside a procedure
                 if( level == 0 )
                 {
-                    BuildTD(tp, &dc); //type descriptor; len used as its address
+                    BuildTD(tp, &dc); //build type descriptor; len used as its address
                 }
             }
 
@@ -2480,6 +2494,9 @@ void Declarations(int *varsize)
 
 	//make total data size 4byte aligned
     *varsize = (*varsize + 3) / 4 * 4;
+    
+    //check if any pointer type didn't get its base type fixed!
+    //inside _Type() base type of every pointer type is assigned temporarily to intType.
     ptbase = pbsList;
     while( ptbase != NIL )
     {
