@@ -1408,6 +1408,8 @@ WhileStatement-a ::= ELSIF expression DO StatementSequence WhileStatement-a
 //           111v  cond  <---------------off-------------->
 //bit num: 32----28----24----20----16----12----08----04----
 //
+//This offset is in words, not bytes, as instructions are always one word long.
+//
 //u=0 means branch to addr in Rc
 //u=1 means branch to PC + 1 + off
 //v=0 means link addr is NOT stored in R15

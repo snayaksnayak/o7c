@@ -2174,7 +2174,7 @@ void _Type(Type *type)
 }
 
 
-//consumes ProcedureDeclaration
+//consumes all ProcedureDeclaration
 void ProcedureDecl()
 {
     Object proc=0;
@@ -2187,12 +2187,12 @@ void ProcedureDecl()
     //DeclarationSequence = [CONST {ConstDeclaration ';'}] [TYPE {TypeDeclaration ';'}] [VAR {VariableDeclaration ';'}] {ProcedureDeclaration ';'}
     //ProcedureDeclaration = ProcedureHeading ';' ProcedureBody ident
     //ProcedureHeading = PROCEDURE identdef [FormalParameters]
-    Get(&sym); //we found token PROCEEDURE, so Get(); see _Module() function.
+    Get(&sym); //we have already found the token PROCEEDURE, so do a Get(); see _Module() function.
 
-    if( sym == MUL )
+    if( sym == MUL ) //if this procedure is declared as 'PROCEDURE* Abcd()'
     {
         Get(&sym);
-        internal = TRUE; //why?
+        internal = TRUE; //why? it is an interrupt procedure
     }
 
     //PROCEDURE keyword already consumed in _Module()
@@ -2201,31 +2201,31 @@ void ProcedureDecl()
     {
         CopyId(procid);
         Get(&sym);
-        
+
         //create procedure object
         NewObj(&proc, id, Const);
-        
+
         //create procedure type
         parblksize = 4;
         NEW((void **)&type, sizeof(TypeDesc));
         type->form = Proc;
         type->size = WordSize;
         proc->type = type;
-        
+
         CheckExport(&proc->expo); //consumes '*'
-        
+
         //increment exno for procedures
         if( proc->expo )
         {
             proc->exno = exno;
             exno++;
         }
-        
+
         //create a new scope for local variables
         OpenScope();
-        
+
         level++; //we have gone one level up, i.e. entered into a procedure scope, no more in module scope
-        
+
         proc->val = -1;
         type->base = noType; //assume no result type
 
@@ -2233,24 +2233,30 @@ void ProcedureDecl()
 //FPSection = [VAR] ident {',' ident} ':' FormalType
 //FormalType = {ARRAY OF} qualident
         ProcedureType(type, &parblksize);  //formal parameter list and result type
-        
+
 //ProcedureDeclaration = ProcedureHeading ';' ProcedureBody ident
         Check(SEMICOLON, "no ;"); //consumes above semicolon
-        locblksize = parblksize; //i.e. 4
+        locblksize = parblksize; //locblksize includes parblksize
 
 //ProcedureBody = DeclarationSequence [BEGIN StatementSequence] [RETURN expression] END
-        Declarations(&locblksize); //consume above DeclarationSequence, get size of variables found in local scope
+        Declarations(&locblksize); //consume above DeclarationSequence, get total size of variables found in local scope
 
-        proc->val = Here() * 4; //procedure entry address
+		//we haven't seen BEGIN yet,
+		//we now calculate procedure entry address here,
+		//but we may need to calculate it again (see below)
+		//if we come across a child procedure declaration
+        proc->val = Here() * 4;
         proc->type->dsc = topScope->next;
 
         //if PROCEDURE found, do recursive call
         if( sym == PROCEDURE )
         {
-			//address of this new nested procedure is not known,
+			//since we got another procedure declared,
+			//entry address (which starts at BEGIN)
+			//of parent procedure is not known,
             L = 0; //so now keep it 0
-            //generate code for the jump into this procedure
-            FJump(&L); //and bring back the address of code in L, which needs fix later
+            //generate branch instruction to jump to BEGIN of parent procedure
+            FJump(&L); //and bring back the address of the just generated branch instruction in L, which needs a fix later
             do
             {
                 ProcedureDecl();
@@ -2258,13 +2264,16 @@ void ProcedureDecl()
                 Check(SEMICOLON, "no ;");//why? which semicolon? see above grammar production, every procedure declaration ends with a ';'
             }
             while(sym == PROCEDURE);
-            
-            //now fix the code at L 
+
+            //now fix the code at L
             FixLink(L);
-            proc->val = Here() * 4; //srinu
+
+            //since we got a child procedure declaration, recalculate entry address of the parent procedure
+            proc->val = Here() * 4;
             proc->type->dsc = topScope->next;
         }
 
+		//write procedure prolog
         Enter(parblksize, locblksize, internal);
 
         //ProcedureBody = DeclarationSequence [BEGIN StatementSequence] [RETURN expression] END
@@ -2276,7 +2285,6 @@ void ProcedureDecl()
 
         if( sym == RETURN )
         {
-
             Get(&sym);
             expression(&x);
             if( type->base == noType )
@@ -2291,9 +2299,12 @@ void ProcedureDecl()
         else if( type->base->form != NoTyp )
         {
             Mark("function without result");
-            type->base = noType;
+            type->base = noType; //this is just to continue parsing
         }
+
+        //write procedure epilog
         Return(type->base->form, &x, locblksize, internal);
+
         CloseScope();
         level--;
 
@@ -2320,6 +2331,7 @@ void ProcedureDecl()
 
 }
 
+//consumes DeclarationSequence except ProcedureDeclaration
 void Declarations(int *varsize)
 {
     Object obj=0, first=0;
@@ -2494,7 +2506,7 @@ void Declarations(int *varsize)
 
 	//make total data size 4byte aligned
     *varsize = (*varsize + 3) / 4 * 4;
-    
+
     //check if any pointer type didn't get its base type fixed!
     //inside _Type() base type of every pointer type is assigned temporarily to intType.
     ptbase = pbsList;

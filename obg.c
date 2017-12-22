@@ -230,9 +230,9 @@ void FixLink(int L)
 {
     int L1;
     invalSB();
-    while( L != 0 )
+    while( L != 0 ) //in some cases we need loop
     {
-        L1 = code[L] & 0x3FFFF;
+        L1 = code[L] & 0x3FFFF; //why? only 18bits being extracted? RAM size 1MB, addressable by 20bits; branch instruction offset is in words, so 2 bits less.
         fix(L, pc-L-1);
         L = L1;
     }
@@ -1677,8 +1677,8 @@ int Here()
 
 void FJump(int *L)
 {
-    Put3(BC, 7, *L);
-    *L = pc-1;
+    Put3(BC, 7, *L); //write the code for branch instruction
+    *L = pc-1; //get the address of this just written branching code in L
 }
 
 void CFJump(Item* x)
@@ -1820,20 +1820,22 @@ void Call(Item* x, int r)
     invalSB();
 }
 
+//procedure prolog
 void Enter(int parblksize, int locblksize, int internal)
 {
     int a, r;
     invalSB();
     frame = 0;
-    if( !internal )//procedure prolog
+
+    if( !internal ) //normal procedure
     {
         a = 4;
         r = 0;
-        Put1(Sub, SP, SP, locblksize);
-        Put2(Str, LNK, SP, 0);
-        while( a < parblksize )
+        Put1(Sub, SP, SP, locblksize); //allocate space for parameters and local variables, locblksize includes parblksize
+        Put2(Str, LNK, SP, 0); //put link reg value on stack, where now SP points
+        while( a < parblksize ) //we know that parameters to this function have come through registers
         {
-            Put2(Str, r, SP, a);
+            Put2(Str, r, SP, a); //store register values R0, R1 etc. in this order to stack locations SP+4, SP+8 respectively
             r++;
             a = a + 4;
         }
@@ -1848,25 +1850,26 @@ void Enter(int parblksize, int locblksize, int internal)
     }
 }
 
+//procedure epilog
 void Return(int form, Item* x, int size, int internal)
 {
     if( form != NoTyp )
     {
-        load(x);
+        load(x); //why? load result to which register?
     }
-    if( !internal )//procedure epilog
+    if( !internal ) //normal procedure
     {
         Put2(Ldr, LNK, SP, 0);
         Put1(Add, SP, SP, size);
         Put3(BR, 7, LNK);
     }
-    else//interrupt return, restore SB, R1, R0
+    else //interrupt procedure return, restore SB, R1, R0
     {
         Put2(Ldr, SB, SP, 8);
         Put2(Ldr, 1, SP, 4);
         Put2(Ldr, 0, SP, 0);
         Put1(Add, SP, SP, 12);
-        Put3(BR, 7, 0x10);
+        Put3(BR, 7, 0x10); //why? jump to address in R16?
     }
     RH = 0;
 }
