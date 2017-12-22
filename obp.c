@@ -1882,7 +1882,6 @@ void FPSection(int *adr, int *nofpar)
 
     //IdentList = identdef {',' identdef}
     //identdef = ident ['*']
-
     IdentList(cl, &first); //why? FPSection doesn't expect a IdentList...
     FormalType(&tp, 0);
     rdo = FALSE;
@@ -1917,7 +1916,6 @@ void FPSection(int *adr, int *nofpar)
     }
 }
 
-
 void ProcedureType(Type ptype, int *parblksize)
 {
     Object obj=0;
@@ -1932,7 +1930,6 @@ void ProcedureType(Type ptype, int *parblksize)
 
     //ProcedureType = PROCEDURE [FormalParameters]
     //FormalParameters = '(' [FPSection {';' FPSection}] ')' [':' qualident]
-
     if( sym == LPAREN )
     {
         Get(&sym);
@@ -1977,13 +1974,11 @@ void ProcedureType(Type ptype, int *parblksize)
             }
         }
     }
-
-
     //why? if no lparen found, then nofpar of the procedure type should be 0.
     //where it is done in oberon code?
-
 }
 
+//srinu
 void FormalType(Type *typ, int dim)
 {
     Object obj=0;
@@ -2036,12 +2031,11 @@ void FormalType(Type *typ, int dim)
     }
 }
 
-
 void CheckRecLevel(int lev)
 {
     if( lev != 0 )
     {
-        Mark("ptr base must be global");
+        Mark("ptr base must be global"); //why? no pointer declaration inside a procedure?
     }
 }
 
@@ -2061,13 +2055,11 @@ void _Type(Type *type)
         {
             Get(&sym);
         }
-        while(!( (sym == IDENT) || (sym >= ARRAY) ));
+        while( (sym != IDENT) && (sym < ARRAY) );
     }
-
 
     //type = qualident | ArrayType | RecordType | PointerType | ProcedureType
     //qualident = [ident '.'] ident
-
     if( sym == IDENT )
     {
         qualident(&obj);
@@ -2075,7 +2067,7 @@ void _Type(Type *type)
         {
             if( (obj->type != NIL) && (obj->type->form != NoTyp) )
             {
-                *type = obj->type;
+                *type = obj->type; //this type is type of qualified identifier
             }
         }
         else
@@ -2089,17 +2081,13 @@ void _Type(Type *type)
     {
         Get(&sym);
         ArrayType(type);
-
     }
     //RecordType = RECORD ['(' BaseType ')'] [FieldListSequence] END
     else if( sym == RECORD )
     {
         Get(&sym);
         RecordType(type);
-
         Check(END, "no END");
-
-
     }
     //PointerType = POINTER TO type
     else if( sym == POINTER )
@@ -2111,12 +2099,14 @@ void _Type(Type *type)
         (*type)->size = WordSize;
         (*type)->base = intType;
 
+		//type = qualident | ArrayType | RecordType | PointerType | ProcedureType
+		//qualident = [ident '.'] ident
         if( sym == IDENT )
         {
             obj = thisObj();
             if( obj != NIL )
             {
-                if( (obj->class == Typ) && (obj->type->form == Record || obj->type->form == NoTyp) )
+                if( (obj->class == Typ) && (obj->type->form == Record || obj->type->form == NoTyp) ) //why? NoTyp?
                 {
                     CheckRecLevel(obj->lev);
                     (*type)->base = obj->type;
@@ -2130,9 +2120,10 @@ void _Type(Type *type)
                     Mark("no valid base type");
                 }
             }
-            else
+            else //if we found a new identifier, may be it is a record declared later
             {
-                CheckRecLevel(level);//enter into list of forward references to be fixed in Declarations
+                CheckRecLevel(level);
+                //enter into list of forward references to be fixed in Declarations
                 NEW((void **)&ptbase, sizeof(PtrBaseDesc));
                 CopyId(ptbase->name);
                 ptbase->type = *type;
@@ -2141,16 +2132,15 @@ void _Type(Type *type)
             }
             Get(&sym);
         }
-        else
+        else //if declared as POINTER TO RECORD...END
         {
             _Type(&(*type)->base);
-            if( (*type)->base->form != Record )
+            if( (*type)->base->form != Record ) //only record allowed, array not allowed
             {
                 Mark("must point to record");
             }
             CheckRecLevel(level);
         }
-
     }
     //ProcedureType = PROCEDURE [FormalParameters]
     else if( sym == PROCEDURE )
@@ -2162,7 +2152,7 @@ void _Type(Type *type)
         (*type)->size = WordSize;
         dmy = 0;
         ProcedureType(*type, &dmy);
-        (*type)->dsc = topScope->next;
+        (*type)->dsc = topScope->next; //why?
         CloseScope();
     }
     else
@@ -2229,16 +2219,16 @@ void ProcedureDecl()
         proc->val = -1;
         type->base = noType; //assume no result type
 
-//FormalParameters = '(' [FPSection {';' FPSection}] ')' [':' qualident]
-//FPSection = [VAR] ident {',' ident} ':' FormalType
-//FormalType = {ARRAY OF} qualident
+		//FormalParameters = '(' [FPSection {';' FPSection}] ')' [':' qualident]
+		//FPSection = [VAR] ident {',' ident} ':' FormalType
+		//FormalType = {ARRAY OF} qualident
         ProcedureType(type, &parblksize);  //formal parameter list and result type
 
-//ProcedureDeclaration = ProcedureHeading ';' ProcedureBody ident
+		//ProcedureDeclaration = ProcedureHeading ';' ProcedureBody ident
         Check(SEMICOLON, "no ;"); //consumes above semicolon
         locblksize = parblksize; //locblksize includes parblksize
 
-//ProcedureBody = DeclarationSequence [BEGIN StatementSequence] [RETURN expression] END
+		//ProcedureBody = DeclarationSequence [BEGIN StatementSequence] [RETURN expression] END
         Declarations(&locblksize); //consume above DeclarationSequence, get total size of variables found in local scope
 
 		//we haven't seen BEGIN yet,
@@ -2260,7 +2250,7 @@ void ProcedureDecl()
             do
             {
                 ProcedureDecl();
-//DeclarationSequence = [ CONST { ConstDeclaration ';' } ] [ TYPE { TypeDeclaration ';' } ] [ VAR { VariableDeclaration ';' } ] { ProcedureDeclaration ';' }
+				//DeclarationSequence = [ CONST { ConstDeclaration ';' } ] [ TYPE { TypeDeclaration ';' } ] [ VAR { VariableDeclaration ';' } ] { ProcedureDeclaration ';' }
                 Check(SEMICOLON, "no ;");//why? which semicolon? see above grammar production, every procedure declaration ends with a ';'
             }
             while(sym == PROCEDURE);
