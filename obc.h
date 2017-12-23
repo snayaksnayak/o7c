@@ -731,6 +731,7 @@ FormalParameters-b ::= ':' qualident
 # follow set:  ';' ')' END
 
 //FormalType = { ARRAY OF } qualident | ProcedureType
+		//type of formal parameters, which appear after ':'
 		//ex. PROCEDURE myproc(VAR x,y:INTEGER):REAL;
 		//ex. PROCEDURE myproc(x,y: ARRAY OF module.type):REAL;
 		//ex. PROCEDURE myproc(VAR x,y: PROCEDURE):REAL;
@@ -803,7 +804,7 @@ identdef-a ::= '*'
 # follow set:  '=' ',' '(' ':' ';'
 
 //ident = letter { letter | digit }
-		//ex. class5mark
+		//ex. class5mark | SET | BOOLEAN | BYTE | CHAR | LONGREAL | REAL | LONGINT | INTEGER
 ident ::= letter ident-a
        |  letter
 # start set:   letter
@@ -1045,7 +1046,7 @@ ProcedureType-a ::= FormalParameters
 # follow set:  ';' ')' END
 
 //qualident = [ ident '.' ] ident
-		//ex. mymodule.myvar | myvar
+		//ex. mymodule.myvar | myvar | SET | BOOLEAN | BYTE | CHAR | LONGREAL | REAL | LONGINT | INTEGER
 qualident ::= qualident-a ident
            |  ident
 # start set:   letter

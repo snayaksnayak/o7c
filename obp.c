@@ -83,6 +83,7 @@ void CheckExport(int *expo)
     }
 }
 
+//ex. mymodule.myvar | myvar | SET | BOOLEAN | BYTE | CHAR | LONGREAL | REAL | LONGINT | INTEGER
 void qualident(Object *obj)
 {
     //qualident = [ident '.'] ident
@@ -1648,8 +1649,8 @@ void IdentList(int class, Object *first)
 {
     Object obj=0;
 
-//IdentList = identdef {',' identdef}
-//identdef = ident ['*']
+	//IdentList = identdef {',' identdef}
+	//identdef = ident ['*']
     if( sym == IDENT )
     {
         NewObj(first, id, class);
@@ -1728,7 +1729,7 @@ void ArrayType(Type *type)
     *type = typ;
 }
 
-
+//srinu
 void RecordType(Type *type)
 {
     Object obj=0, obj0=0, new=0, bot=0, base=0;
@@ -1869,45 +1870,54 @@ void FPSection(int *adr, int *nofpar)
 
     //FPSection = [VAR] ident {',' ident} ':' FormalType
     //FormalType = {ARRAY OF} qualident
-
     if( sym == VAR )
     {
         Get(&sym);
-        cl = Par;
+        cl = Par; //why? seems it should be Var
     }
     else
     {
-        cl = Var;
+        cl = Var; //why? seems it should be Par
     }
 
     //IdentList = identdef {',' identdef}
     //identdef = ident ['*']
-    IdentList(cl, &first); //why? FPSection doesn't expect a IdentList...
-    FormalType(&tp, 0);
+    //why? IdentList is not expected in FPSection; see grammar!
+    //FPSection actually expects ident {',' ident}
+    //only difference is '*'
+    //so we called IdentList() perhaps being lazy ;-)
+    IdentList(cl, &first); //collect all the ObjDesc link listed at 'first'
+    FormalType(&tp, 0); //collect type of them
+    
+    //all parameters are writeable!
     rdo = FALSE;
+    
     if( (cl == Var) && (tp->form >= Array) )
     {
-        cl = Par;
+        cl = Par; //treat open array parameter as if VAR is written before it
         rdo = TRUE;
     }
+    
     if( ((tp->form == Array) && (tp->len < 0)) || (tp->form == Record) )
     {
-        parsize = 2*WordSize; //open array or record, needs second word for length or type tag
+        parsize = 2*WordSize; //open array needs second word for length, record needs second word for type tag
     }
     else
     {
         parsize = WordSize;
     }
+    
+    //for all parameters of same type
     obj = first;
     while( obj != NIL )
     {
-        (*nofpar)++;
+        (*nofpar)++; //count number of parameters
         obj->class = cl;
         obj->type = tp;
         obj->rdo = rdo;
         obj->lev = level;
-        obj->val = *adr;
-        *adr = *adr + parsize;
+        obj->val = *adr; //starts from 4 in case of procedure declaration, but starts from 0 in case of procedure variable and procedure parameter
+        *adr = *adr + parsize; //either 4 or 8
         obj = obj->next;
     }
     if( *adr >= 52 )
@@ -1923,7 +1933,7 @@ void ProcedureType(Type ptype, int *parblksize)
     int nofpar;
 
     ptype->base = noType;
-    size = *parblksize;
+    size = *parblksize; //parblksize = 4 if called from ProcedureDecl() else 0
     nofpar = 0;
     ptype->nofpar = 0;
     ptype->dsc = NIL;
@@ -1939,23 +1949,25 @@ void ProcedureType(Type ptype, int *parblksize)
         }
         else
         {
-            FPSection(&size, &nofpar);
-            while( sym == SEMICOLON )
+            FPSection(&size, &nofpar); //consumes a list of parameter names and its type
+            while( sym == SEMICOLON ) //we may see a ';' and another set of parameters with a different type!
             {
                 Get(&sym);
                 FPSection(&size, &nofpar);
             }
             Check(RPAREN, "no )");
         }
+        
         ptype->nofpar = nofpar;
         *parblksize = size;
-        if( sym == COLON )//function
+        
+        if( sym == COLON )//in case it is not a procedure but a function, we see result type after ':'
         {
             Get(&sym);
-            if( sym == IDENT )
+            if( sym == IDENT ) //INTEGER, SET, REAL etc are recognized as an identifier by scanner
             {
-                qualident(&obj);
-                ptype->base = obj->type;
+                qualident(&obj); //qualident spots INTEGER, SET, REAL etc.
+                ptype->base = obj->type; //base type of procedure is its result type
                 if( !((obj->class == Typ) && (obj->type->form == Byte
                                               || obj->type->form == Bool
                                               || obj->type->form == Char
@@ -1974,11 +1986,11 @@ void ProcedureType(Type ptype, int *parblksize)
             }
         }
     }
-    //why? if no lparen found, then nofpar of the procedure type should be 0.
-    //where it is done in oberon code?
+    //why? if no lparen found, then?
+    //In an Oberon program, does it mean anything?
 }
 
-//srinu
+//type of formal parameters, which appear after ':'
 void FormalType(Type *typ, int dim)
 {
     Object obj=0;
@@ -1998,27 +2010,37 @@ void FormalType(Type *typ, int dim)
             *typ = intType;
         }
     }
-    else if( sym == ARRAY )
+    else if( sym == ARRAY ) //if it is of open array type (array type of a formal parameter is always an open array, because length is not specified)
     {
         Get(&sym);
         Check(OF, "OF ?");
-        if( dim >= 1 )
+        if( dim >= 1 ) //where dim is incremented? here itself, see below
         {
-            Mark("multi-dimensional open arrays not implemented");
+            Mark("multi-dimensional open arrays not implemented"); 
         }
         NEW((void **)typ, sizeof(TypeDesc));
         (*typ)->form = Array;
-        (*typ)->len = -1;
-        (*typ)->size = 2*WordSize;
+        (*typ)->len = -1; //this identifies an open array
+        (*typ)->size = 2*WordSize; //why? open array needs second word for length
         FormalType(&(*typ)->base, dim+1);
     }
     else if( sym == PROCEDURE )
     {
         Get(&sym);
-        OpenScope();
+        //opening a new scope here is unnecessary
+        //but here use of OpenScope() is a trick
+        //after collecting parameter objects to topScope->next
+        //we hang it to dsc of procedure type and CloseScope()!
+        OpenScope(); 
         NEW((void **)typ, sizeof(TypeDesc));
         (*typ)->form = Proc;
         (*typ)->size = WordSize;
+        //PROCEDURE keyword can appear in three places
+        //1. for a procedure declaration
+        //2. for a procedure variable declaration
+        //3. for a procedure type formal parameter
+        //calculation of size of parameters is required only in case 1
+        //not at case 2 and 3; so we pass a dummy pointer here
         dmy = 0;
         ProcedureType(*typ, &dmy);
         (*typ)->dsc = topScope->next;
@@ -2074,7 +2096,6 @@ void _Type(Type *type)
         {
             Mark("not a type or undefined");
         }
-
     }
     //ArrayType = ARRAY length {',' length} OF type
     else if( sym == ARRAY )
@@ -2146,13 +2167,23 @@ void _Type(Type *type)
     else if( sym == PROCEDURE )
     {
         Get(&sym);
+        //opening a new scope here is unnecessary
+        //but here use of OpenScope() is a trick
+        //after collecting parameter objects to topScope->next
+        //we hang it to dsc of procedure type and CloseScope()!
         OpenScope();
         NEW((void **)type, sizeof(TypeDesc));
         (*type)->form = Proc;
         (*type)->size = WordSize;
+        //PROCEDURE keyword can appear in three places
+        //1. for a procedure declaration
+        //2. for a procedure variable declaration
+        //3. for a procedure type formal parameter
+        //calculation of size of parameters is required only in case 1
+        //not at case 2 and 3; so we pass a dummy pointer here
         dmy = 0;
         ProcedureType(*type, &dmy);
-        (*type)->dsc = topScope->next; //why?
+        (*type)->dsc = topScope->next;
         CloseScope();
     }
     else
@@ -2196,7 +2227,7 @@ void ProcedureDecl()
         NewObj(&proc, id, Const);
 
         //create procedure type
-        parblksize = 4;
+        parblksize = 4; //why? this is one extra word for content of LNK register which gets allocated on stack with other parameters, so that function can return to caller
         NEW((void **)&type, sizeof(TypeDesc));
         type->form = Proc;
         type->size = WordSize;
@@ -2222,7 +2253,7 @@ void ProcedureDecl()
 		//FormalParameters = '(' [FPSection {';' FPSection}] ')' [':' qualident]
 		//FPSection = [VAR] ident {',' ident} ':' FormalType
 		//FormalType = {ARRAY OF} qualident
-        ProcedureType(type, &parblksize);  //formal parameter list and result type
+        ProcedureType(type, &parblksize);  //to consume formal parameter list and result type; additionally provides total parameter size
 
 		//ProcedureDeclaration = ProcedureHeading ';' ProcedureBody ident
         Check(SEMICOLON, "no ;"); //consumes above semicolon

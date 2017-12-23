@@ -1048,9 +1048,9 @@ void initObt()
     enter("BOOLEAN", Typ, boolType, 0);
     enter("BYTE", Typ, byteType, 0);
     enter("CHAR", Typ, charType, 0);
-    enter("LONGREAL", Typ, realType, 0); //LONGREAL is synonym to REAL
+    enter("LONGREAL", Typ, realType, 0); //LONGREAL is synonym to REAL, so same parameters as REAL
     enter("REAL", Typ, realType, 0);
-    enter("LONGINT", Typ, intType, 0); //LONGINT is synonym to INTEGER
+    enter("LONGINT", Typ, intType, 0); //LONGINT is synonym to INTEGER, so same parameters as INTEGER
     enter("INTEGER", Typ, intType, 0);
     //above enter()s link ObjDesc to TypeDesc and vice versa.
 
