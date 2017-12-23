@@ -18,7 +18,7 @@ int main(int argc, char **argv)
 
     f=fopen(argv[1],"r"); //open the source file to read.
 
-    if(f==NULL)
+    if(f==0)
     {
         printf("Error opening source file\n");
         exit(0);

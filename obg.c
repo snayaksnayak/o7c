@@ -2480,7 +2480,7 @@ void Close(char* modid, int key, int nofent)
     //create *.rsc file
     MakeFileName(name, modid, ".rsc");
     R = fopen(name, "wb");
-    if(R == NULL)
+    if(R == 0)
     {
         printf("can't create object file\n");
         exit(0);

@@ -788,7 +788,7 @@ void Export(char* modid, int *newSF, int *key)
     MakeFileName(filename, modid, ".tsf"); //tsf is for temporary symbol file
     strcpy(newname, filename); //newname = modulename.tsf
     R = fopen(newname, "wb"); //modulename.tsf created
-    if(R == NULL)
+    if(R == 0)
     {
         Mark("can't create temp symbol file");
     }
@@ -880,7 +880,7 @@ void Export(char* modid, int *newSF, int *key)
     fclose(R);
 
     R = fopen(newname, "rb");
-    if(R == NULL)
+    if(R == 0)
     {
         Mark("can't open temp symbol file");
     }
@@ -896,12 +896,12 @@ void Export(char* modid, int *newSF, int *key)
     MakeFileName(filename, modid, ".smb");
     strcpy(oldname, filename); //oldname = modulename.smb
     R1 = fopen(oldname, "rb"); //old modulename.smb file opened
-    if(R1 == NULL)
+    if(R1 == 0)
     {
         printf("symbol file was not there\n"); //sum is new key
     }
 
-    if( R1 != NULL) //symbol file was there
+    if( R1 != 0) //symbol file was there
     {
         fseek( R1, 4, SEEK_SET );
         fread(&(oldkey), sizeof(int), 1, R1); //so read old key
@@ -911,14 +911,14 @@ void Export(char* modid, int *newSF, int *key)
         oldkey = sum+1; //so just make old key different than current checksum
     }
 
-    if(R1 != NULL)
+    if(R1 != 0)
     {
         fclose(R1);
     }
 
 
     R = fopen(newname, "rb+"); //open modulename.tsf file
-    if(R == NULL)
+    if(R == 0)
     {
         Mark("can't open temp symbol file");
     }
