@@ -226,6 +226,8 @@ void fix(int at, int with)
     code[at] = ((code[at] >> 24) * C24) + (with & 0xFFFFFF);
 }
 
+//fix actual address of a forward jump
+//in already generated forward jump instruction 
 void FixLink(int L)
 {
     int L1;
@@ -238,6 +240,7 @@ void FixLink(int L)
     }
 }
 
+//***************
 void FixLinkWith(int L0, int dst)
 {
     int L1;
@@ -321,7 +324,7 @@ void load(Item* x)
                 else
                 {
                     GetSB(x->r);
-                    Put1(Add, RH, SB, x->a + 0x100);//mark as progbase-relative
+                    Put1(Add, RH, SB, x->a + 0x100); //mark as progbase-relative
                 }
             }
             else if( (x->a <= 0x0FFFF) && (x->a >= -0x10000) )
@@ -811,6 +814,7 @@ void BuildTD(Type T, int* dc)
 void _TypeTest(Item* x, Type T, int varpar, int isguard)
 {
     int pc0;
+    
     //fetch tag into RH
     if( varpar )
     {
@@ -1432,7 +1436,7 @@ void StrToChar(Item* x )
     x->a = _str[x->a];
 }
 
-void Store(Item* x, Item* y) // x := y
+void Store(Item* x, Item* y) //x := y
 {
     int op;
     load(y);
@@ -2302,10 +2306,14 @@ void Adr(Item* x)
         Mark("not addressable");
     }
 }
+//*********************
 
+//directly check input integer constant
+//with processor condition code
 void Condition(Item* x)
 {
     //x->mode == Const
+    //x->type->form == Int
     SetCC(x, x->a);
 }
 
@@ -2358,6 +2366,10 @@ void Header()
     }
 }
 
+//count all pointer variables,
+//pointer variables inside record variables,
+//and pointer variables inside array variables.
+//this is a recursive count.
 int NofPtrs(Type typ)
 {
     Object fld;
@@ -2385,19 +2397,27 @@ int NofPtrs(Type typ)
     {
         n = 0;
     }
+    
     return n;
 }
 
+//write 1 byte
 void WriteByte(FILE *R, int x)
 {
     fputc(x, R);
 }
 
+//write 4 byte
 void WriteInt(FILE *R, int x)
 {
     fwrite(&x, sizeof(int), 1, R);
 }
 
+//find all pointer variables,
+//pointer variables inside record variables,
+//pointer variables inside array variables,
+//and write their addresses.
+//this is a recursive find.
 void FindPtrs(FILE* R, Type typ, int adr)
 {
     Object fld;

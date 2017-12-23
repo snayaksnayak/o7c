@@ -83,11 +83,12 @@ void CheckExport(int *expo)
     }
 }
 
+//qualident = [ident '.'] ident
 //ex. mymodule.myvar | myvar | SET | BOOLEAN | BYTE | CHAR | LONGREAL | REAL | LONGINT | INTEGER
 void qualident(Object *obj)
 {
-    //qualident = [ident '.'] ident
-    *obj = thisObj();
+    *obj = thisObj(); //find ObjDesc of recently found identifier from symbol table
+    
     Get(&sym);
     if( *obj == 0 )
     {
@@ -99,7 +100,8 @@ void qualident(Object *obj)
         Get(&sym);
         if( sym == IDENT )
         {
-            *obj = thisimport(*obj);
+            *obj = thisimport(*obj); //find ObjDesc of recently found identifier from already found module from symbol table
+            
             Get(&sym);
             if( *obj == 0 )
             {
@@ -193,7 +195,6 @@ int IsExtension(Type t0, Type t1)
     return (t0 == t1) || ((t1 != 0) && IsExtension(t0, t1->base)) ;
 }
 
-//expressions
 void TypeTest(Item *x, Type T, int guard)
 {
     Type xt;
@@ -257,10 +258,11 @@ void selector(Item *x)
     Object obj;
 
     //selector = '.' ident | '[' ExpList ']' | '^' | '(' qualident ')'
-    while( (sym == LBRAK) || (sym == PERIOD) || (sym == ARROW)
-            || ((sym == LPAREN) && (x->type->form == Record || x->type->form == Pointer)) )
+    while( (sym == LBRAK)
+        || (sym == PERIOD)
+        || (sym == ARROW)
+        || ((sym == LPAREN) && (x->type->form == Record || x->type->form == Pointer)) )
     {
-
         //ExpList = expression {',' expression}
         if( sym == LBRAK )
         {
@@ -268,6 +270,7 @@ void selector(Item *x)
             {
                 Get(&sym);
                 expression(&y);
+                
                 if( x->type->form == Array )
                 {
                     CheckInt(&y);
@@ -350,10 +353,8 @@ void selector(Item *x)
             }
             Check(RPAREN, " ) missing");
         }
-
     }
 }
-
 
 int CompTypes(Type t0, Type t1, int varpar);
 int EqualSignatures(Type t0, Type t1)
@@ -361,17 +362,18 @@ int EqualSignatures(Type t0, Type t1)
     Object p0, p1;
     int com;
     com = TRUE;
+    
     if( (t0->base == t1->base) && (t0->nofpar == t1->nofpar) )
     {
         p0 = t0->dsc;
         p1 = t1->dsc;
         while( p0 != 0)
         {
-            if( (p0->class == p1->class) && (p0->rdo == p1->rdo) &&
-                    ((p0->type == p1->type) ||
+            if( (p0->class == p1->class)
+             && (p0->rdo == p1->rdo)
+             && ((p0->type == p1->type) ||
                      ((p0->type->form == Array) && (p1->type->form == Array) && (p0->type->len == p1->type->len) && (p0->type->base == p1->type->base)) ||
-                     ((p0->type->form == Proc) && (p1->type->form == Proc) && EqualSignatures(p0->type, p1->type)))
-              )
+                     ((p0->type->form == Proc) && (p1->type->form == Proc) && EqualSignatures(p0->type, p1->type))) )
             {
                 p0 = p0->next;
                 p1 = p1->next;
@@ -408,7 +410,7 @@ int CompTypes(Type t0, Type t1, int varpar)
                            || ((t0->form == Pointer || t0->form == Proc) && (t1->form == NilTyp)) ) ) ; //if lhs is a pointer or a procedure variable and rhs is NIL
 }
 
-
+//*****************
 void Parameter(Object par)
 {
     Item x;
@@ -652,6 +654,7 @@ void StandFunc(Item *x, int fct, Type restyp)
         {
             CheckConst(x);
             CheckInt(x);
+            
             Condition(x);
         }
         else if( fct == 20 ) //H
@@ -755,6 +758,7 @@ void factor(Item *x)
         {
             MakeItem(x, obj, level);
             selector(x);
+            
             if( sym == LPAREN )
             {
                 Get(&sym);
@@ -1349,7 +1353,7 @@ void StatSequence()
                     Mark("should be :=");
                     Get(&sym);
                     expression(&y); //just to continue parsing for more error
-                } //srinu
+                }
                 else if( sym == LPAREN ) //procedure call
                 {
                     Get(&sym);
@@ -1365,12 +1369,13 @@ void StatSequence()
                         ParamList(&x);
                     }
                 }
-                else if( x.type->form == Proc )//procedure call without parameters
+                else if( x.type->form == Proc ) //procedure call without parameters
                 {
                     if( x.type->nofpar > 0 )
                     {
                         Mark("missing parameters");
                     }
+                    
                     if( x.type->base->form == NoTyp )
                     {
                         PrepCall(&x, &rx);
@@ -1403,11 +1408,7 @@ void StatSequence()
 
             StatSequence();
             L0 = 0;
-            while(
-
-                sym == ELSIF
-
-            )
+            while(sym == ELSIF)
             {
                 Get(&sym);
                 FJump(&L0);
@@ -1420,11 +1421,8 @@ void StatSequence()
 
                 StatSequence();
             }
-            if(
-
-                sym == ELSE
-
-            )
+            
+            if(sym == ELSE)
             {
                 Get(&sym);
                 FJump(&L0);
@@ -1435,12 +1433,10 @@ void StatSequence()
             {
                 Fixup(&x);
             }
+
             FixLink(L0);
 
             Check(END, "no END");
-
-
-
         }
 		//WhileStatement = WHILE expression DO StatementSequence {ELSIF expression DO StatementSequence} END
         else if(
@@ -1629,8 +1625,8 @@ void StatSequence()
     (void)L0;
     (void)L1;
 }
+//************************
 
-//Types and declarations
 void IdentList(int class, Object *first)
 {
     Object obj=0;
@@ -2509,7 +2505,6 @@ void Declarations(int *varsize)
                     BuildTD(tp, &dc); //build type descriptor; len used as its address
                 }
             }
-
             Check(SEMICOLON, "; missing"); //consumes ';'
         }
     }

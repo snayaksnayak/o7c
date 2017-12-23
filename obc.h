@@ -185,9 +185,9 @@ typedef struct Item
 //Fld                    -      -             -
 //Typ                    -      -             -
 //----------------------------------------------------------
-//Reg     regno  -       -
-//RegI    regno  off     -
-//Cond    cond   Tjump   Fjump        (T=True, F=False)
+//Reg                    regno  -             -
+//RegI                   regno  off           -
+//Cond                   cond   Tjump         Fjump           (T=True, F=False)
 
 //Note the similarity of the two types Item and Object.
 //Both describe objects, but whereas
