@@ -605,7 +605,7 @@ void FindHiddenPointers(FILE *R, Type typ, int offset)
 {
     Object fld;
     int i, n;
-    if( (typ->form == Pointer) || (typ->form == NilTyp) ) //why? why NilTyp?
+    if( (typ->form == Pointer) || (typ->form == NilTyp) ) //why? why NilTyp? because NIL is of NilTyp
     {
         Write(R, Fld);
         printf("fld_class=%d ", Fld);

@@ -1151,7 +1151,7 @@ ScaleFactor-b ::= digit ScaleFactor-b
 #              RETURN '|'
 
 //selector = '.' ident | '[' ExpList ']' | '^' | '(' qualident ')'
-		//ex. record.element | array[rowindex, columnindex] | recordpointer^.element (= recordpointer.element) | p(Circle).radius (here p is of type Figure)
+		//ex. record.element | array[rowindex, columnindex] | recordpointer^.element (equals to recordpointer.element) | p(Circle).radius (here p is of type Figure)
 selector ::= '.' ident
           |  '[' ExpList ']'
           |  '^'

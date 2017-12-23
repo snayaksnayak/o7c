@@ -727,7 +727,7 @@ void FindPtrFlds(Type typ, int off, int *dcw)
 {
     Object fld;
     int i, s;
-    if( (typ->form == Pointer) || (typ->form == NilTyp) )
+    if( (typ->form == Pointer) || (typ->form == NilTyp) ) //pointer or NIL
     {
         data[*dcw] = off;
         (*dcw)++;
@@ -1446,7 +1446,7 @@ void Store(Item* x, Item* y) // x := y
     }
     if( x->mode == Var )
     {
-        if( x->r > 0 )//local
+        if( x->r > 0 ) //local
         {
             Put2(op, y->r, SP, x->a + frame);
         }
@@ -1493,10 +1493,10 @@ void StoreStruct(Item* x, Item* y) // x := y, frame = 0
                     Mark("different length/size, not implemented");
                 }
             }
-            else//y is open array
+            else //y is open array
             {
                 Put2(Ldr, RH, SP, y->a+4);
-                s = y->type->base->size;//element size
+                s = y->type->base->size; //element size
                 pc0 = pc;
                 Put3(BC, EQ, 0);
                 if( s == 1 )
@@ -2363,7 +2363,7 @@ int NofPtrs(Type typ)
     Object fld;
     int n;
 
-    if( (typ->form == Pointer) || (typ->form == NilTyp) )
+    if( (typ->form == Pointer) || (typ->form == NilTyp) ) //pointer or NIL
     {
         n = 1;
     }
@@ -2403,7 +2403,7 @@ void FindPtrs(FILE* R, Type typ, int adr)
     Object fld;
     int i, s;
 
-    if( (typ->form == Pointer) || (typ->form == NilTyp) )
+    if( (typ->form == Pointer) || (typ->form == NilTyp) ) //pointer or NIL
     {
         WriteInt(R, adr);
     }

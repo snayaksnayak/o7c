@@ -187,13 +187,11 @@ void CheckReadOnly(Item *x)
     }
 }
 
-
+//return true if t1 is an extension of t0
 int IsExtension(Type t0, Type t1)
 {
-    //t1 is an extension of t0
     return (t0 == t1) || ((t1 != 0) && IsExtension(t0, t1->base)) ;
 }
-
 
 //expressions
 void TypeTest(Item *x, Type T, int guard)
@@ -393,17 +391,21 @@ int EqualSignatures(Type t0, Type t1)
     return com;
 }
 
-
+//check for assignment compatibility
+//in three cases we assign things, so need to check compatibility
+//1. in assignment statement (lhs t0 := rhs t1)
+//2. in actual parameter to formal parameter assignment (lhs formal t0 := rhs actual t1)
+//3. while returning an expression as a result of a procedure (lhs result type t0 := rhs return exp t1)
 int CompTypes(Type t0, Type t1, int varpar)
 {
-    //check for assignment compatibility
-    return (t0 == t1)
-           || ((t0->form == Array) && (t1->form == Array) && (t0->base == t1->base) && (t0->len == t1->len))
-           || ((t0->form == Record) && (t1->form == Record) && IsExtension(t0, t1))
-           || (!varpar &&
-               (((t0->form == Pointer) && (t1->form == Pointer) && IsExtension(t0->base, t1->base))
-                || ((t0->form == Proc) && (t1->form == Proc) && EqualSignatures(t0, t1))
-                || ((t0->form == Pointer || t0->form == Proc) && (t1->form == NilTyp)))) ;
+    //return true
+    return    (t0 == t1) //if lhs and rhs are of same type
+           || ((t0->form == Array) && (t1->form == Array) && (t0->base == t1->base) && (t0->len == t1->len)) //if both are arrays of same base type and length
+           || ((t0->form == Record) && (t1->form == Record) && IsExtension(t0, t1)) //if both are records and rhs is extension of lhs
+           || (!varpar && //below cases will not be applicable for assignment to formal parameter declared with VAR keyword, only above cases applicable
+                          (   ((t0->form == Pointer) && (t1->form == Pointer) && IsExtension(t0->base, t1->base)) //if both are pointers and rhs is extension of lhs
+                           || ((t0->form == Proc) && (t1->form == Proc) && EqualSignatures(t0, t1)) //if both are procedure variables and of equal signature
+                           || ((t0->form == Pointer || t0->form == Proc) && (t1->form == NilTyp)) ) ) ; //if lhs is a pointer or a procedure variable and rhs is NIL
 }
 
 
@@ -414,7 +416,7 @@ void Parameter(Object par)
     expression(&x);
     if( par != 0)
     {
-        varpar = (par->class == Par);
+        varpar = (par->class == Par); //if parameter is declared with keyword VAR, par->class == Par
         if( CompTypes(par->type, x.type, varpar) )
         {
             if( !varpar )
@@ -756,7 +758,7 @@ void factor(Item *x)
             if( sym == LPAREN )
             {
                 Get(&sym);
-                if( (x->type->form == Proc) && (x->type->base->form != NoTyp) ) //procedure with a valid return type (may be NilTyp)
+                if( (x->type->form == Proc) && (x->type->base->form != NoTyp) ) //procedure with a valid return type (may be NIL (=NilTyp))
                 {
                     PrepCall(x, &rx);
                     ParamList(x);
@@ -1026,7 +1028,7 @@ void expression(Item *x)
             }
         }
         else if( ((xf == Pointer || xf == Proc) && (yf == NilTyp))
-                 || ((yf == Pointer || yf == Proc) && (xf == NilTyp)) )
+              || ((yf == Pointer || yf == Proc) && (xf == NilTyp)) )
         {
             if( rel <= NEQ )
             {
@@ -1268,70 +1270,71 @@ void StatSequence()
         obj = 0;
 
         //sync
-        if( !((sym == IDENT)
-
-                || ((sym >= IF) && (sym <= FOR))
-
-                || (sym >= SEMICOLON)) )
+        if( !( (sym == IDENT)
+            || ((sym >= IF) && (sym <= FOR))
+            || (sym >= SEMICOLON) ) )
         {
             Mark("statement expected");
             do
             {
                 Get(&sym);
             }
-            while(!( (sym == IDENT)
-
-                     || (sym >= IF) ));
-
+            while( !( (sym == IDENT)
+                   || (sym >= IF) ) );
         }
 
-//StatementSequence = statement {';' statement}
-//statement = [assignment | ProcedureCall | IfStatement | CaseStatement | WhileStatement | RepeatStatement | ForStatement]
-//assignment = designator ':=' expression
-//designator = qualident {selector}
-//selector = '.' ident | '[' ExpList ']' | '^' | '(' qualident ')'
+		//StatementSequence = statement {';' statement}
+		//statement = [assignment | ProcedureCall | IfStatement | CaseStatement | WhileStatement | RepeatStatement | ForStatement]
+		//assignment = designator ':=' expression
+		//designator = qualident {selector}
+		//selector = '.' ident | '[' ExpList ']' | '^' | '(' qualident ')'
         if( sym == IDENT )
         {
             qualident(&obj);
             MakeItem(&x, obj, level);
+
             if( x.mode == SProc )
             {
                 StandProc(obj->val);
             }
             else
             {
-                selector(&x);
+                selector(&x); //consume if we have any selector and update x
+
                 //assignment = designator ':=' expression
                 if( sym == BECOMES ) //assignment
                 {
                     Get(&sym);
-                    CheckReadOnly(&x);
-                    expression(&y);
+                    CheckReadOnly(&x); //lhs shouldn't be readonly
 
-                    if( CompTypes(x.type, y.type, FALSE) )
+                    expression(&y); //consume rhs
+
+                    if( CompTypes(x.type, y.type, FALSE) ) //when compatibility exists
                     {
+						//if lhs is a variable of type Byte, Bool, Char, Int, Real, Set, Pointer or Proc
                         if( (x.type->form <= Pointer) || (x.type->form == Proc) )
                         {
                             Store(&x, &y);
                         }
+                        //if lhs is a variable of type Array or Record
                         else
                         {
                             StoreStruct(&x, &y);
                         }
                     }
-                    else if( (x.type->form == Array) && (y.type->form == Array) && (x.type->base == y.type->base) && (y.type->len < 0) )
+                    else if( (x.type->form == Array) && (y.type->form == Array) && (x.type->base == y.type->base) && (y.type->len < 0) ) //why? len < 0?
                     {
                         StoreStruct(&x, &y);
                     }
-                    else if( (x.type->form == Array) && (x.type->base->form == Char) && (y.type->form == String) )
+                    else if( (x.type->form == Array) && (x.type->base->form == Char) && (y.type->form == String) ) //x is Array of Char and y is String
                     {
                         CopyString(&x, &y);
                     }
-                    else if( (x.type->form == Int) && (y.type->form == Int) )//BYTE
+                    else if( (x.type->form == Int) && (y.type->form == Int) ) //x and y are of type Byte
                     {
                         Store(&x, &y);
                     }
-                    else if( (x.type->form == Char) && (y.type->form == String) && (y.b == 2) )
+                    else if( (x.type->form == Char) && (y.type->form == String) && (y.b == 2) ) //x is Char variable and y is single character string
                     {
                         StrToChar(&y);
                         Store(&x, &y);
@@ -1340,15 +1343,14 @@ void StatSequence()
                     {
                         Mark("illegal assignment");
                     }
-
                 }
                 else if( sym == EQL )
                 {
                     Mark("should be :=");
                     Get(&sym);
-                    expression(&y);
-                }
-                else if( sym == LPAREN )//procedure call
+                    expression(&y); //just to continue parsing for more error
+                } //srinu
+                else if( sym == LPAREN ) //procedure call
                 {
                     Get(&sym);
                     if( (x.type->form == Proc) && (x.type->base->form == NoTyp) )
@@ -1388,14 +1390,9 @@ void StatSequence()
                     Mark("not a procedure");
                 }
             }
-
         }
-//IfStatement = IF expression THEN StatementSequence {ELSIF expression THEN StatementSequence} [ELSE StatementSequence] END
-        else if(
-
-            sym == IF
-
-        )
+		//IfStatement = IF expression THEN StatementSequence {ELSIF expression THEN StatementSequence} [ELSE StatementSequence] END
+        else if( sym == IF )
         {
             Get(&sym);
             expression(&x);
@@ -1445,7 +1442,7 @@ void StatSequence()
 
 
         }
-//WhileStatement = WHILE expression DO StatementSequence {ELSIF expression DO StatementSequence} END
+		//WhileStatement = WHILE expression DO StatementSequence {ELSIF expression DO StatementSequence} END
         else if(
 
             sym == WHILE
@@ -1486,7 +1483,7 @@ void StatSequence()
 
 
         }
-//RepeatStatement = REPEAT StatementSequence UNTIL expression
+		//RepeatStatement = REPEAT StatementSequence UNTIL expression
         else if(
 
             sym == REPEAT
@@ -1511,10 +1508,8 @@ void StatSequence()
             {
                 Mark("missing UNTIL");
             }
-
-
         }
-//ForStatement = FOR ident ':=' expression TO expression [BY ConstExpression] DO StatementSequence END
+		//ForStatement = FOR ident ':=' expression TO expression [BY ConstExpression] DO StatementSequence END
         else if( sym == FOR )
         {
             Get(&sym);
@@ -1568,18 +1563,12 @@ void StatSequence()
             {
                 Mark("identifier expected");
             }
-
-
-
-
-
-
         }
-//CaseStatement = CASE expression OF case {'|' case} END
-//case = [CaseLabelList ':' StatementSequence]
-//CaseLabelList = LabelRange {',' LabelRange}
-//LabelRange = label ['..' label]
-//label = integer | string | qualident
+		//CaseStatement = CASE expression OF case {'|' case} END
+		//case = [CaseLabelList ':' StatementSequence]
+		//CaseLabelList = LabelRange {',' LabelRange}
+		//LabelRange = label ['..' label]
+		//label = integer | string | qualident
         else if( sym == CASE )
         {
             Get(&sym);
@@ -1621,7 +1610,6 @@ void StatSequence()
             }
 
             Check(END, "no END");
-
         }
 
         CheckRegs();
@@ -1642,8 +1630,6 @@ void StatSequence()
     (void)L1;
 }
 
-
-
 //Types and declarations
 void IdentList(int class, Object *first)
 {
@@ -1654,14 +1640,17 @@ void IdentList(int class, Object *first)
     if( sym == IDENT )
     {
         NewObj(first, id, class);
+
         Get(&sym);
         CheckExport(&(*first)->expo);
+
         while( sym == COMMA )
         {
             Get(&sym);
             if( sym == IDENT )
             {
                 NewObj(&obj, id, class);
+
                 Get(&sym);
                 CheckExport(&obj->expo);
             }
@@ -1670,6 +1659,7 @@ void IdentList(int class, Object *first)
                 Mark("ident?");
             }
         }
+
         //VariableDeclaration = IdentList ':' type
         if( sym == COLON )
         {
@@ -1686,13 +1676,16 @@ void IdentList(int class, Object *first)
     }
 }
 
+//only for TYPE declarations, not for formal parameters
 void ArrayType(Type *type)
 {
     Item x;
     Type typ=0;
     int len;
+
     NEW((void **)&typ, sizeof(TypeDesc));
     typ->form = NoTyp;
+
     //ArrayType = ARRAY length {',' length} OF type
     expression(&x);
     if( (x.mode == Const) && (x.type->form == Int) && (x.a >= 0) )
@@ -1704,10 +1697,12 @@ void ArrayType(Type *type)
         len = 1;
         Mark("not a valid length");
     }
+
     if( sym == OF )
     {
         Get(&sym);
         _Type(&typ->base);
+
         if( (typ->base->form == Array) && (typ->base->len < 0) )
         {
             Mark("dyn array not allowed");
@@ -1716,20 +1711,21 @@ void ArrayType(Type *type)
     else if( sym == COMMA )
     {
         Get(&sym);
-        ArrayType(&typ->base);//multidimentional array
+        ArrayType(&typ->base); //multidimentional array
     }
     else
     {
         Mark("missing OF");
         typ->base = intType;
     }
-    typ->size = (len * typ->base->size + 3) / 4 * 4;
+
+    typ->size = (len * typ->base->size + 3) / 4 * 4; //make 4byte aligned
     typ->form = Array;
     typ->len = len;
     *type = typ;
 }
 
-//srinu
+//only for TYPE declarations, not for formal parameters
 void RecordType(Type *type)
 {
     Object obj=0, obj0=0, new=0, bot=0, base=0;
@@ -1741,17 +1737,19 @@ void RecordType(Type *type)
     typ->base = 0;
     typ->mno = -level;
     typ->nofpar = 0;
+
     offset = 0;
     bot = 0;
 
     //RecordType = RECORD ['(' BaseType ')'] [FieldListSequence] END
-    if( sym == LPAREN )
+    if( sym == LPAREN ) //record extension
     {
-        Get(&sym);//record extension
+        Get(&sym);
         if( level != 0 )
         {
             Mark("extension of local types not implemented");
         }
+
         //BaseType = qualident
         if( sym == IDENT )
         {
@@ -1767,7 +1765,8 @@ void RecordType(Type *type)
                     typ->base = intType;
                     Mark("invalid extension");
                 }
-                typ->nofpar = typ->base->nofpar + 1;//"nofpar" here abused for extension level
+                typ->nofpar = typ->base->nofpar + 1; //'nofpar' here abused for extension level
+
                 bot = typ->base->dsc;
                 offset = typ->base->size;
             }
@@ -1783,18 +1782,19 @@ void RecordType(Type *type)
         Check(RPAREN, "no )");
     }
 
-
-
     //FieldListSequence = FieldList {';' FieldList}
     //FieldList = IdentList ':' type
     //IdentList = identdef {',' identdef}
     //identdef = ident ['*']
-    while( sym == IDENT )//fields
+    while( sym == IDENT ) //fields
     {
         n = 0;
         obj = bot;
+
+        //get all comma separated fields of same type
         while( sym == IDENT )
         {
+			//check for multiple definition of any field
             obj0 = obj;
             while( (obj0 != 0) && (strcmp(obj0->name, id) != 0) )
             {
@@ -1804,14 +1804,22 @@ void RecordType(Type *type)
             {
                 Mark("mult def");
             }
+
+			//new field! create ObjDesc
             NEW((void **)&new, sizeof(ObjDesc));
             CopyId(new->name);
             new->class = Fld;
             new->next = obj;
+
+            //add to link list
             obj = new;
             n++;
+
+			//mark if it is exported
             Get(&sym);
             CheckExport(&new->expo);
+
+            //see if we have one more field of same type
             if( (sym != COMMA) && (sym != COLON) )
             {
                 Mark("comma expected");
@@ -1821,46 +1829,54 @@ void RecordType(Type *type)
                 Get(&sym);
             }
         }
+
+		//consume ':' and then its type
         Check(COLON, "colon expected");
         _Type(&tp);
+
+		//open array not allowed as a record field
         if( (tp->form == Array) && (tp->len < 0) )
         {
             Mark("dyn array not allowed");
         }
+
+		//field size can be either 1byte or 4byte aligned
         if( tp->size > 1 )
         {
             offset = (offset+3) / 4 * 4;
         }
-        offset = offset + n * tp->size;
+
+        offset = offset + (n * tp->size); //total offset for n comma separated fields of same type
         off = offset;
+
         obj0 = obj;
-        while( obj0 != bot )
+        while( obj0 != bot ) //till we reach base type's fields
         {
             obj0->type = tp;
             obj0->lev = 0;
-            off = off - tp->size;
+            off = off - tp->size; //last field gets highest offset
             obj0->val = off;
             obj0 = obj0->next;
         }
-        bot = obj;
+        bot = obj; //redefine bot as bottom most field of this extended/derived record
 
         if( sym == SEMICOLON )
         {
             Get(&sym);
-
         }
         else if( sym != END )
         {
-
             Mark(" ; or END");
         }
     }
+
     typ->form = Record;
     typ->dsc = bot;
     typ->size = (offset + 3) / 4 * 4;
     *type = typ;
 }
 
+//only for couple of parameters of same type
 void FPSection(int *adr, int *nofpar)
 {
     Object obj=0, first=0;
