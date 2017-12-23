@@ -467,7 +467,7 @@ void loadStringAdr(Item* x)
 }
 
 // Items: Conversion from literals or from Objects on the Heap to Items on the Stack
-// makes item for INT, CHAR, NILL, FALS, TRU symbols/literals
+// makes item for INT, CHAR, NIL, FALS, TRU symbols/literals
 void MakeConstItem(Item* x, Type typ, int val)
 {
     x->mode = Const;

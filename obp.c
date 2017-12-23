@@ -787,7 +787,7 @@ void factor(Item *x)
         MakeConstItem(x, charType, ival);
         Get(&sym);
     }
-    else if( sym == NILL )
+    else if( sym == NIL )
     {
         Get(&sym);
         MakeConstItem(x, nilType, 0);
