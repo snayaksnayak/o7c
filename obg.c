@@ -714,7 +714,7 @@ void DeRef(Item* x)
 void Q(Type T, int *dcw)
 {
     //one entry of type descriptor extension table
-    if( T->base != NIL )
+    if( T->base != 0 )
     {
         Q(T->base, dcw);
         data[*dcw] = (T->mno*0x1000 + T->len) * 0x1000 + *dcw - fixorgT;
@@ -735,7 +735,7 @@ void FindPtrFlds(Type typ, int off, int *dcw)
     else if( typ->form == Record )
     {
         fld = typ->dsc;
-        while( fld != NIL )
+        while( fld != 0 )
         {
             FindPtrFlds(fld->type, fld->val + off, dcw);
             fld = fld->next;
@@ -2371,7 +2371,7 @@ int NofPtrs(Type typ)
     {
         fld = typ->dsc;
         n = 0;
-        while( fld != NIL )
+        while( fld != 0 )
         {
             n = NofPtrs(fld->type) + n;
             fld = fld->next;
@@ -2410,7 +2410,7 @@ void FindPtrs(FILE* R, Type typ, int adr)
     else if( typ->form == Record )
     {
         fld = typ->dsc;
-        while( fld != NIL )
+        while( fld != 0 )
         {
             FindPtrs(R, fld->type, fld->val + adr);
             fld = fld->next;
@@ -2451,7 +2451,7 @@ void Close(char* modid, int key, int nofent)
     nofimps = 0;
     comsize = 4;
     nofptrs = 0;
-    while( obj != NIL )
+    while( obj != 0 )
     {
         if( (obj->class == Mod) && (obj->dsc != System) )
         {
@@ -2494,7 +2494,7 @@ void Close(char* modid, int key, int nofent)
 
 	//write imported module names excluding SYSTEM
     obj = topScope->next;
-    while( (obj != NIL) && (obj->class == Mod) )
+    while( (obj != 0) && (obj->class == Mod) )
     {
         if( obj->dsc != System )
         {
@@ -2541,7 +2541,7 @@ void Close(char* modid, int key, int nofent)
 
 	//write command names and its val
     obj = topScope->next;
-    while( obj != NIL )
+    while( obj != 0 )
     {
         if( (obj->exno != 0) && (obj->class == Const) && (obj->type->form == Proc) &&
                 (obj->type->nofpar == 0) && (obj->type->base == noType) )
@@ -2563,7 +2563,7 @@ void Close(char* modid, int key, int nofent)
 
 	//entries
     obj = topScope->next;
-    while( obj != NIL )
+    while( obj != 0 )
     {
         if( obj->exno != 0 )
         {
@@ -2577,7 +2577,7 @@ void Close(char* modid, int key, int nofent)
                 {
                     WriteInt(R, obj->type->len & 0xFFFF);
                 }
-                else if( (obj->type->form == Pointer) && ((obj->type->base->typobj == NIL) || (obj->type->base->typobj->exno == 0)) )
+                else if( (obj->type->form == Pointer) && ((obj->type->base->typobj == 0) || (obj->type->base->typobj->exno == 0)) )
                 {
                     WriteInt(R, obj->type->base->len & 0xFFFF);
                 }
@@ -2588,7 +2588,7 @@ void Close(char* modid, int key, int nofent)
 
 	//pointer variables
     obj = topScope->next;
-    while( obj != NIL )
+    while( obj != 0 )
     {
         if( obj->class == Var )
         {

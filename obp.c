@@ -89,7 +89,7 @@ void qualident(Object *obj)
     //qualident = [ident '.'] ident
     *obj = thisObj();
     Get(&sym);
-    if( *obj == NIL )
+    if( *obj == 0 )
     {
         Mark("undef");
         *obj = dummy;
@@ -101,7 +101,7 @@ void qualident(Object *obj)
         {
             *obj = thisimport(*obj);
             Get(&sym);
-            if( *obj == NIL )
+            if( *obj == 0 )
             {
                 Mark("undef");
                 *obj = dummy;
@@ -191,7 +191,7 @@ void CheckReadOnly(Item *x)
 int IsExtension(Type t0, Type t1)
 {
     //t1 is an extension of t0
-    return (t0 == t1) || ((t1 != NIL) && IsExtension(t0, t1->base)) ;
+    return (t0 == t1) || ((t1 != 0) && IsExtension(t0, t1->base)) ;
 }
 
 
@@ -202,7 +202,7 @@ void TypeTest(Item *x, Type T, int guard)
     xt = x->type;
     if( (T->form == Pointer || T->form == Record) && (T->form == xt->form) )
     {
-        while( (xt != T) && (xt != NIL) )
+        while( (xt != T) && (xt != 0) )
         {
             xt = xt->base;
         }
@@ -298,7 +298,7 @@ void selector(Item *x)
                 {
                     obj = thisfield(x->type);
                     Get(&sym);
-                    if( obj != NIL )
+                    if( obj != 0 )
                     {
                         Field(x, obj);
                         x->type = obj->type;
@@ -367,7 +367,7 @@ int EqualSignatures(Type t0, Type t1)
     {
         p0 = t0->dsc;
         p1 = t1->dsc;
-        while( p0 != NIL)
+        while( p0 != 0)
         {
             if( (p0->class == p1->class) && (p0->rdo == p1->rdo) &&
                     ((p0->type == p1->type) ||
@@ -380,7 +380,7 @@ int EqualSignatures(Type t0, Type t1)
             }
             else
             {
-                p0 = NIL;
+                p0 = 0;
                 com = FALSE;
             }
         }
@@ -412,7 +412,7 @@ void Parameter(Object par)
     Item x;
     int varpar;
     expression(&x);
-    if( par != NIL)
+    if( par != 0)
     {
         varpar = (par->class == Par);
         if( CompTypes(par->type, x.type, varpar) )
@@ -482,7 +482,7 @@ void ParamList(Item *x)
         while( sym <= COMMA )
         {
             Check(sym, "comma?");
-            if( par != NIL )
+            if( par != 0 )
             {
                 par = par->next;
             }
@@ -1265,7 +1265,7 @@ void StatSequence()
     //StatSequence
     do
     {
-        obj = NIL;
+        obj = 0;
 
         //sync
         if( !((sym == IDENT)
@@ -1682,7 +1682,7 @@ void IdentList(int class, Object *first)
     }
     else
     {
-        *first = NIL;
+        *first = 0;
     }
 }
 
@@ -1738,11 +1738,12 @@ void RecordType(Type *type)
 
     NEW((void **)&typ, sizeof(TypeDesc));
     typ->form = NoTyp;
-    typ->base = NIL;
+    typ->base = 0;
     typ->mno = -level;
     typ->nofpar = 0;
     offset = 0;
-    bot = NIL;
+    bot = 0;
+
     //RecordType = RECORD ['(' BaseType ')'] [FieldListSequence] END
     if( sym == LPAREN )
     {
@@ -1795,11 +1796,11 @@ void RecordType(Type *type)
         while( sym == IDENT )
         {
             obj0 = obj;
-            while( (obj0 != NIL) && (strcmp(obj0->name, id) != 0) )
+            while( (obj0 != 0) && (strcmp(obj0->name, id) != 0) )
             {
                 obj0 = obj0->next;
             }
-            if( obj0 != NIL)
+            if( obj0 != 0)
             {
                 Mark("mult def");
             }
@@ -1888,16 +1889,16 @@ void FPSection(int *adr, int *nofpar)
     //so we called IdentList() perhaps being lazy ;-)
     IdentList(cl, &first); //collect all the ObjDesc link listed at 'first'
     FormalType(&tp, 0); //collect type of them
-    
+
     //all parameters are writeable!
     rdo = FALSE;
-    
+
     if( (cl == Var) && (tp->form >= Array) )
     {
         cl = Par; //treat open array parameter as if VAR is written before it
         rdo = TRUE;
     }
-    
+
     if( ((tp->form == Array) && (tp->len < 0)) || (tp->form == Record) )
     {
         parsize = 2*WordSize; //open array needs second word for length, record needs second word for type tag
@@ -1906,10 +1907,10 @@ void FPSection(int *adr, int *nofpar)
     {
         parsize = WordSize;
     }
-    
+
     //for all parameters of same type
     obj = first;
-    while( obj != NIL )
+    while( obj != 0 )
     {
         (*nofpar)++; //count number of parameters
         obj->class = cl;
@@ -1926,6 +1927,10 @@ void FPSection(int *adr, int *nofpar)
     }
 }
 
+//PROCEDURE keyword can appear in three places
+//1. for a procedure declaration
+//2. for a procedure variable declaration
+//3. for a procedure type formal parameter
 void ProcedureType(Type ptype, int *parblksize)
 {
     Object obj=0;
@@ -1936,7 +1941,7 @@ void ProcedureType(Type ptype, int *parblksize)
     size = *parblksize; //parblksize = 4 if called from ProcedureDecl() else 0
     nofpar = 0;
     ptype->nofpar = 0;
-    ptype->dsc = NIL;
+    ptype->dsc = 0;
 
     //ProcedureType = PROCEDURE [FormalParameters]
     //FormalParameters = '(' [FPSection {';' FPSection}] ')' [':' qualident]
@@ -1957,10 +1962,10 @@ void ProcedureType(Type ptype, int *parblksize)
             }
             Check(RPAREN, "no )");
         }
-        
+
         ptype->nofpar = nofpar;
         *parblksize = size;
-        
+
         if( sym == COLON )//in case it is not a procedure but a function, we see result type after ':'
         {
             Get(&sym);
@@ -2016,7 +2021,7 @@ void FormalType(Type *typ, int dim)
         Check(OF, "OF ?");
         if( dim >= 1 ) //where dim is incremented? here itself, see below
         {
-            Mark("multi-dimensional open arrays not implemented"); 
+            Mark("multi-dimensional open arrays not implemented");
         }
         NEW((void **)typ, sizeof(TypeDesc));
         (*typ)->form = Array;
@@ -2031,7 +2036,7 @@ void FormalType(Type *typ, int dim)
         //but here use of OpenScope() is a trick
         //after collecting parameter objects to topScope->next
         //we hang it to dsc of procedure type and CloseScope()!
-        OpenScope(); 
+        OpenScope();
         NEW((void **)typ, sizeof(TypeDesc));
         (*typ)->form = Proc;
         (*typ)->size = WordSize;
@@ -2087,7 +2092,7 @@ void _Type(Type *type)
         qualident(&obj);
         if( obj->class == Typ )
         {
-            if( (obj->type != NIL) && (obj->type->form != NoTyp) )
+            if( (obj->type != 0) && (obj->type->form != NoTyp) )
             {
                 *type = obj->type; //this type is type of qualified identifier
             }
@@ -2125,7 +2130,7 @@ void _Type(Type *type)
         if( sym == IDENT )
         {
             obj = thisObj();
-            if( obj != NIL )
+            if( obj != 0 )
             {
                 if( (obj->class == Typ) && (obj->type->form == Record || obj->type->form == NoTyp) ) //why? NoTyp?
                 {
@@ -2361,7 +2366,7 @@ void Declarations(int *varsize)
     PtrBase ptbase=0;
     int expo;
     char id[ID_LEN];
-    pbsList = NIL;
+    pbsList = 0;
 
     //sync
     if( (sym < CONST) && (sym != END) && (sym != RETURN) )
@@ -2453,7 +2458,7 @@ void Declarations(int *varsize)
 
             //assign Object created for this type symbol
             //as typobj in TypeDesc of declared type
-            if( tp->typobj == NIL )
+            if( tp->typobj == 0 )
             {
                 tp->typobj = obj;
             }
@@ -2473,7 +2478,7 @@ void Declarations(int *varsize)
             if( tp->form == Record )
             {
                 ptbase = pbsList; //check whether this is base of a pointer type; search and fixup
-                while( ptbase != NIL )
+                while( ptbase != 0 )
                 {
                     if( strcmp(obj->name, ptbase->name) == 0 )
                     {
@@ -2503,7 +2508,7 @@ void Declarations(int *varsize)
             IdentList(Var, &first); //see all variables declared like aVar, bVar: INTEGER
             _Type(&tp); //find their type
             obj = first; //all variables are linked, so start from first
-            while( obj != NIL )
+            while( obj != 0 )
             {
                 obj->type = tp;
                 obj->lev = level;
@@ -2531,7 +2536,7 @@ void Declarations(int *varsize)
     //check if any pointer type didn't get its base type fixed!
     //inside _Type() base type of every pointer type is assigned temporarily to intType.
     ptbase = pbsList;
-    while( ptbase != NIL )
+    while( ptbase != 0 )
     {
         if( ptbase->type->base->form == Int )
         {
@@ -2697,7 +2702,7 @@ void _Module()
 
 		//close module scope
         CloseScope();
-        pbsList = NIL;
+        pbsList = 0;
 
     }
     else
