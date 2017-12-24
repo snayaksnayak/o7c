@@ -235,23 +235,57 @@ void FixLink(int L)
     while( L != 0 ) //in some cases we need loop
     {
         L1 = code[L] & 0x3FFFF; //why? only 18bits being extracted? RAM size 1MB, addressable by 20bits; branch instruction offset is in words, so 2 bits less.
-        fix(L, pc-L-1);
+        fix(L, pc-L-1); //why? pc-L-1? see below
         L = L1;
     }
+    //at addr L we had inserted BC, 7, off.
+    //now we are at addr M and got to know that
+    //our BC should jump to addr M, so we called FixLink.
+    
+    //when BC is executed at addr L,
+    //BC will calculate jump addr as L + 1 + off;
+    //and result should be addr M,
+    //i.e. L + 1 + off = M.
+
+    //since we are at addr M now, our PC = M.
+    //hence, L + 1 + off = PC;
+    //i.e. off = PC - L - 1.
 }
 
-//***************
 void FixLinkWith(int L0, int dst)
 {
     int L1;
 
     while( L0 != 0 )
     {
-        L1 = code[L0] & 0xFFFFFF;
-        code[L0] = ((code[L0] >> 24) * C24) + ((dst - L0 - 1) & 0xFFFFFF);
+        L1 = code[L0] & 0xFFFFFF; //why? 0xFFFFFF? seems it can be 0x3FFFF, see FixLink
+        code[L0] = ((code[L0] >> 24) * C24) + ((dst - L0 - 1) & 0xFFFFFF); //why? dst-L0-1? see FixLink
         L0 = L1;
     }
 }
+
+//if L0 is 0, {do nothing} return L1
+//else when L0 is valid, {merge L0 with L1} and return L0
+//how to do merge?
+
+//goto addr L0
+//get off from that instruction
+//say we got A
+
+//goto addr A
+//get off from that instruction
+//say we got B
+
+//goto addr B
+//get off from that instruction
+//say we got C
+
+//goto addr C
+//get off from that instruction
+//say we got 0
+
+//goto addr C again
+//write L1 as off in that instruction
 
 int merged(int L0, int L1)
 {
@@ -260,6 +294,7 @@ int merged(int L0, int L1)
     if( L0 != 0 )
     {
         L3 = L0;
+        
         do
         {
             L2 = L3;
@@ -267,6 +302,7 @@ int merged(int L0, int L1)
         }
         while(!( L3 == 0 ));
         code[L2] = code[L2] + L1;
+        
         L1 = L0;
     }
     return L1;
@@ -274,17 +310,18 @@ int merged(int L0, int L1)
 
 // loading of operands and addresses into registers
 
+//base is a register number
 void GetSB(int base)
 {
-    if( (version != 0) && ((base != curSB) || (base != 0)) )
+    if( (version != 0) && ((base != curSB) || (base != 0)) ) //why? ((base != curSB) || (base != 0))? for risc-5, this fails only when base = curSB and base = 0, i.e. base = curSB = 0. seems this case is unlikely to happen. so this condition will always pass!
     {
-        Put2(Ldr, SB, -base, pc-fixorgD);
-        fixorgD = pc-1;
+        Put2(Ldr, SB, -base, pc-fixorgD); //why? -base?
+        fixorgD = pc-1; //why?
         curSB = base;
     }
 }
 
-//segfault
+//null reference trap, equivalent to segfault
 void NilCheck()
 {
     if( check )
@@ -293,6 +330,8 @@ void NilCheck()
     }
 }
 
+//***************
+//srinu
 void load(Item* x)
 {
     int op;
@@ -318,12 +357,12 @@ void load(Item* x)
                 }
                 else if( x->r == 0 )
                 {
-                    Put3(BL, 7, 0);
-                    Put1a(Sub, RH, LNK, pc*4 - x->a);
+                    Put3(BL, 7, 0); //L: always goto pc+1+0, r15:=pc+1
+                    Put1a(Sub, RH, LNK, pc*4 - x->a); //L+1: rh:=r15-((L+1)*4 - x->a)
                 }
-                else
+                else //x->r is -ve 
                 {
-                    GetSB(x->r);
+                    GetSB(x->r); 
                     Put1(Add, RH, SB, x->a + 0x100); //mark as progbase-relative
                 }
             }

@@ -1342,8 +1342,8 @@ WhileStatement-a ::= ELSIF expression DO StatementSequence WhileStatement-a
 //DIV deposits remainder in auxiliary register H
 //--------------
 //
-//void Put1(int op, int a, int b, int im)
-//void Put1a(int op, int a, int b, int im)
+//void Put1(int op, int a, int b, int im), for 16bit im
+//void Put1a(int op, int a, int b, int im), for 32bit im
 //
 //Format1:   00uv  --a-  --b-  -op-  <---------im--------->
 //bit num: 32----28----24----20----16----12----08----04----
