@@ -227,7 +227,7 @@ void fix(int at, int with)
 }
 
 //fix actual address of a forward jump
-//in already generated forward jump instruction 
+//in already generated forward jump instruction
 void FixLink(int L)
 {
     int L1;
@@ -241,7 +241,7 @@ void FixLink(int L)
     //at addr L we had inserted BC, 7, off.
     //now we are at addr M and got to know that
     //our BC should jump to addr M, so we called FixLink.
-    
+
     //when BC is executed at addr L,
     //BC will calculate jump addr as L + 1 + off;
     //and result should be addr M,
@@ -294,7 +294,7 @@ int merged(int L0, int L1)
     if( L0 != 0 )
     {
         L3 = L0;
-        
+
         do
         {
             L2 = L3;
@@ -302,7 +302,7 @@ int merged(int L0, int L1)
         }
         while(!( L3 == 0 ));
         code[L2] = code[L2] + L1;
-        
+
         L1 = L0;
     }
     return L1;
@@ -331,7 +331,7 @@ void NilCheck()
 }
 
 //***************
-//srinu
+//converts Item mode to Reg
 void load(Item* x)
 {
     int op;
@@ -360,9 +360,9 @@ void load(Item* x)
                     Put3(BL, 7, 0); //L: always goto pc+1+0, r15:=pc+1
                     Put1a(Sub, RH, LNK, pc*4 - x->a); //L+1: rh:=r15-((L+1)*4 - x->a)
                 }
-                else //x->r is -ve 
+                else //x->r is -ve
                 {
-                    GetSB(x->r); 
+                    GetSB(x->r);
                     Put1(Add, RH, SB, x->a + 0x100); //mark as progbase-relative
                 }
             }
@@ -378,6 +378,7 @@ void load(Item* x)
                     Put1(Ior, RH, RH, x->a & 0xFFFF);
                 }
             }
+
             x->r = RH;
             incR();
         }
@@ -392,6 +393,7 @@ void load(Item* x)
                 GetSB(x->r);
                 Put2(op, RH, SB, x->a);
             }
+
             x->r = RH;
             incR();
         }
@@ -399,6 +401,7 @@ void load(Item* x)
         {
             Put2(Ldr, RH, SP, x->a + frame);
             Put2(op, RH, RH, x->b);
+
             x->r = RH;
             incR();
         }
@@ -414,6 +417,7 @@ void load(Item* x)
             Put3(BC, 7, 1);
             FixLink(x->a);
             Put1(Mov, RH, 0, 0);
+
             x->r = RH;
             incR();
         }
@@ -853,7 +857,7 @@ void BuildTD(Type T, int* dc)
 void _TypeTest(Item* x, Type T, int varpar, int isguard)
 {
     int pc0;
-    
+
     //fetch tag into RH
     if( varpar )
     {
@@ -2436,7 +2440,7 @@ int NofPtrs(Type typ)
     {
         n = 0;
     }
-    
+
     return n;
 }
 

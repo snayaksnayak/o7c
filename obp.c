@@ -88,7 +88,7 @@ void CheckExport(int *expo)
 void qualident(Object *obj)
 {
     *obj = thisObj(); //find ObjDesc of recently found identifier from symbol table
-    
+
     Get(&sym);
     if( *obj == 0 )
     {
@@ -101,7 +101,7 @@ void qualident(Object *obj)
         if( sym == IDENT )
         {
             *obj = thisimport(*obj); //find ObjDesc of recently found identifier from already found module from symbol table
-            
+
             Get(&sym);
             if( *obj == 0 )
             {
@@ -195,16 +195,20 @@ int IsExtension(Type t0, Type t1)
     return (t0 == t1) || ((t1 != 0) && IsExtension(t0, t1->base)) ;
 }
 
+//guard denotes if this test is done for type guard
+//ex. p(Circle).radius (where p is of type Figure)
 void TypeTest(Item *x, Type T, int guard)
 {
     Type xt;
     xt = x->type;
+
     if( (T->form == Pointer || T->form == Record) && (T->form == xt->form) )
     {
-        while( (xt != T) && (xt != 0) )
+        while( (xt != T) && (xt != 0) ) //check if type T is basetype of x
         {
             xt = xt->base;
         }
+
         if( xt != T )
         {
             xt = x->type;
@@ -237,7 +241,7 @@ void TypeTest(Item *x, Type T, int guard)
                 Mark("incompatible types");
             }
         }
-        else if( !guard )
+        else if( !guard ) //for type guard tests, don't alter x->type
         {
             MakeConstItem(x, boolType, 1);
         }
@@ -246,7 +250,8 @@ void TypeTest(Item *x, Type T, int guard)
     {
         Mark("type mismatch");
     }
-    if( !guard )
+
+    if( !guard ) //for type guard test, don't alter x->type
     {
         x->type = boolType;
     }
@@ -270,7 +275,7 @@ void selector(Item *x)
             {
                 Get(&sym);
                 expression(&y);
-                
+
                 if( x->type->form == Array )
                 {
                     CheckInt(&y);
@@ -338,6 +343,7 @@ void selector(Item *x)
             if( sym == IDENT )
             {
                 qualident(&obj);
+
                 if( obj->class == Typ )
                 {
                     TypeTest(x, obj->type, TRUE);
@@ -362,7 +368,7 @@ int EqualSignatures(Type t0, Type t1)
     Object p0, p1;
     int com;
     com = TRUE;
-    
+
     if( (t0->base == t1->base) && (t0->nofpar == t1->nofpar) )
     {
         p0 = t0->dsc;
@@ -410,22 +416,27 @@ int CompTypes(Type t0, Type t1, int varpar)
                            || ((t0->form == Pointer || t0->form == Proc) && (t1->form == NilTyp)) ) ) ; //if lhs is a pointer or a procedure variable and rhs is NIL
 }
 
-//*****************
+//par corresponds to formal parameter object
 void Parameter(Object par)
 {
     Item x;
     int varpar;
-    expression(&x);
+
+	//ActualParameters = '(' [ExpList] ')'
+    //ExpList = expression {',' expression}
+    expression(&x); //actual parameter is in x
+
     if( par != 0)
     {
         varpar = (par->class == Par); //if parameter is declared with keyword VAR, par->class == Par
+
         if( CompTypes(par->type, x.type, varpar) )
         {
-            if( !varpar )
+            if( !varpar ) //parameter is NOT declared with keyword VAR, par->class = Var
             {
                 ValueParam(&x);
             }
-            else // par->class = Par it was commented in ORP.Mod.txt, why?
+            else //parameter is declared with keyword VAR, par->class = Par
             {
                 if( !par->rdo )
                 {
@@ -434,8 +445,9 @@ void Parameter(Object par)
                 VarParam(&x, par->type);
             }
         }
-        else if( (x.type->form == Array) && (par->type->form == Array) &&
-                 (x.type->base == par->type->base) && (par->type->len < 0) )
+        else if( (x.type->form == Array) && (par->type->form == Array)
+              && (x.type->base == par->type->base)
+              && (par->type->len < 0) )
         {
             if( !par->rdo )
             {
@@ -443,8 +455,9 @@ void Parameter(Object par)
             }
             OpenArrayParam(&x);
         }
-        else if( (x.type->form == String) && varpar && par->rdo && (par->type->form == Array) &&
-                 (par->type->base->form == Char) && (par->type->len < 0) )
+        else if( varpar && (x.type->form == String)
+              && par->rdo && (par->type->form == Array)
+              && (par->type->base->form == Char) && (par->type->len < 0) )
         {
             StringParam(&x);
         }
@@ -452,13 +465,13 @@ void Parameter(Object par)
         {
             ValueParam(&x);
         }
-        else if( (x.type->form == String) && (x.b == 2) && (par->class == Var) && (par->type->form == Char) )
+        else if( !varpar && (x.type->form == String) && (x.b == 2) && (par->type->form == Char) )
         {
             StrToChar(&x);
             ValueParam(&x);
         }
-        else if( (par->type->form == Array) && (par->type->base == byteType) &&
-                 (par->type->len > 0) && (par->type->size == x.type->size) )
+        else if( (par->type->form == Array) && (par->type->base == byteType) && (par->type->len > 0)
+              && (par->type->size == x.type->size) )
         {
             VarParam(&x, par->type);
         }
@@ -514,10 +527,14 @@ void StandFunc(Item *x, int fct, Type restyp)
 {
     Item y;
     int n, npar;
+
     Check(LPAREN, "no (");
     npar = fct % 10;
     fct = fct / 10;
+
+	//parameter in x
     expression(x);
+
     n = 1;
     while( sym == COMMA )
     {
@@ -525,7 +542,9 @@ void StandFunc(Item *x, int fct, Type restyp)
         expression(&y);
         n++;
     }
+
     Check(RPAREN, "no )");
+
     if( n == npar )
     {
         if( fct == 0 ) //ABS
@@ -557,7 +576,7 @@ void StandFunc(Item *x, int fct, Type restyp)
         }
         else if( fct == 4 ) //ORD
         {
-            if( x->type->form <= Proc )
+            if( x->type->form <= Proc ) //i.e. Byte, Bool, Char, Int, Real, Set, Pointer, NilTyp and NoTyp
             {
                 Ord(x);
             }
@@ -625,7 +644,7 @@ void StandFunc(Item *x, int fct, Type restyp)
         }
         else if( fct == 16 ) //VAL
         {
-            if( (x->mode == Typ) && (x->type->size <= y.type->size) )
+            if( (x->mode == Typ) && (x->type->size <= y.type->size) ) //why? <=?
             {
                 restyp = x->type;
                 *x = y;
@@ -654,13 +673,14 @@ void StandFunc(Item *x, int fct, Type restyp)
         {
             CheckConst(x);
             CheckInt(x);
-            
+
             Condition(x);
         }
         else if( fct == 20 ) //H
         {
             CheckConst(x);
             CheckInt(x);
+
             H(x);
         }
 
@@ -680,38 +700,43 @@ void element(Item *x)
     //element = expression ['..' expression]
     expression(x);
     CheckSetVal(x);
+
     if( sym == UPTO )
     {
         Get(&sym);
         expression(&y);
         CheckSetVal(&y);
+
         _Set(x, &y);
     }
     else
     {
         Singleton(x);
     }
+
     x->type = setType;
 }
 
+//set = '{' [element {',' element}] '}'
 void set(Item *x)
 {
     Item y;
 
-    //set = '{' [element {',' element}] '}'
+	//we have already seen LBRACE
     if( sym >= IF )
     {
         if( sym != RBRACE )
         {
             Mark(" } missing");
         }
-        MakeConstItem(x, setType, 0); //empty set just for continue parsing
+        MakeConstItem(x, setType, 0); //make empty set if we see RBRACE or just for continue parsing
     }
     else
     {
 		//element = expression ['..' expression]
         element(x);
-        while( (sym < RPAREN) || (sym > RBRACE) ) //why?
+
+        while( (sym < RPAREN) || (sym > RBRACE) )
         {
             if( sym == COMMA )
             {
@@ -721,7 +746,9 @@ void set(Item *x)
             {
                 Mark("missing comma");
             }
+
             element(&y);
+
             SetOp(PLUS, x, &y);
         }
     }
@@ -750,6 +777,7 @@ void factor(Item *x)
     if( sym == IDENT )
     {
         qualident(&obj);
+
         if( obj->class == SFunc )
         {
             StandFunc(x, obj->val, obj->type);
@@ -757,8 +785,9 @@ void factor(Item *x)
         else
         {
             MakeItem(x, obj, level);
+
             selector(x);
-            
+
             if( sym == LPAREN )
             {
                 Get(&sym);
@@ -839,7 +868,6 @@ void factor(Item *x)
     }
 }
 
-
 void term(Item *x)
 {
     Item y;
@@ -852,26 +880,30 @@ void term(Item *x)
     //MulOperator = '*' | '/' | DIV | MOD | '&'
     while( (sym >= MUL) && (sym <= AND) )
     {
-        op = sym;
+        op = sym; //note down the operator before getting next symbol
         Get(&sym);
+
         if( op == MUL )
         {
             if( f == Int )
             {
                 factor(&y);
                 CheckInt(&y);
+
                 MulOp(x, &y);
             }
             else if( f == Real )
             {
                 factor(&y);
                 CheckReal(&y);
+
                 RealOp(op, x, &y);
             }
             else if( f == Set )
             {
                 factor(&y);
                 CheckSet(&y);
+
                 SetOp(op, x, &y);
             }
             else
@@ -882,8 +914,10 @@ void term(Item *x)
         else if( (op == DIV) || (op == MOD) )
         {
             CheckInt(x);
+
             factor(&y);
             CheckInt(&y);
+
             DivOp(op, x, &y);
         }
         else if( op == RDIV )
@@ -892,27 +926,30 @@ void term(Item *x)
             {
                 factor(&y);
                 CheckReal(&y);
+
                 RealOp(op, x, &y);
             }
             else if( f == Set )
             {
                 factor(&y);
                 CheckSet(&y);
+
                 SetOp(op, x, &y);
             }
             else
             {
                 Mark("bad type");
             }
-
         }
         //if op == AND
         else
         {
             CheckBool(x);
             And1(x);
+
             factor(&y);
             CheckBool(&y);
+
             And2(x, &y);
         }
     }
@@ -927,14 +964,16 @@ void SimpleExpression(Item *x)
     if( sym == MINUS )
     {
         Get(&sym);
+
         term(x);
+
         if( x->type->form == Int || x->type->form == Real || x->type->form == Set )
         {
             Neg(x);
         }
         else
         {
-            CheckInt(x);
+            CheckInt(x); //to report an error
         }
     }
     else if( sym == PLUS )
@@ -950,38 +989,44 @@ void SimpleExpression(Item *x)
     //AddOperator = '+' | '-' | OR
     while( (sym >= PLUS) && (sym <= OR) )
     {
-        op = sym;
+        op = sym; //note down the operator before getting next symbol
         Get(&sym);
+
         if( op == OR )
         {
-            Or1(x);
             CheckBool(x);
+            Or1(x);
+
             term(&y);
             CheckBool(&y);
+
             Or2(x, &y);
         }
         else if( x->type->form == Int )
         {
             term(&y);
             CheckInt(&y);
+
             AddOp(op, x, &y);
         }
         else if( x->type->form == Real )
         {
             term(&y);
             CheckReal(&y);
+
             RealOp(op, x, &y);
         }
         else
         {
             CheckSet(x);
+
             term(&y);
             CheckSet(&y);
+
             SetOp(op, x, &y);
         }
     }
 }
-
 
 void expression(Item *x)
 {
@@ -999,8 +1044,10 @@ void expression(Item *x)
         Get(&sym);
 
         SimpleExpression(&y);
+
         xf = x->type->form;
         yf = y.type->form;
+
         if( x->type == y.type )
         {
             if( (xf == Char || xf == Int) )
@@ -1056,7 +1103,7 @@ void expression(Item *x)
             }
         }
         else if( (((xf == Array) && (x->type->base->form == Char) &&
-                   ((yf == String) || ((yf == Array) && (y.type->base->form == Char))))
+                   ((yf == String) || ((yf == Array) && (y.type->base->form == Char)))) //why? ((yf == Array) && (y.type->base->form == Char)) seems extra, aren't we checking this condition before? in an else if case of if( x->type == y.type )? anyway no harm...
                   || ((yf == Array) && (y.type->base->form == Char) && (xf == String))) )
         {
             StringRelation(rel, x, &y);
@@ -1079,47 +1126,58 @@ void expression(Item *x)
         {
             Mark("illegal comparison");
         }
+
         x->type = boolType;
     }
     else if( sym == IN )
     {
         Get(&sym);
         CheckInt(x);
+
         SimpleExpression(&y);
         CheckSet(&y);
+
         In(x, &y);
+
         x->type = boolType;
     }
     else if( sym == IS )
     {
         Get(&sym);
         qualident(&obj);
+
         TypeTest(x, obj->type, FALSE);
+
         x->type = boolType;
     }
 }
 
-
-//statements
 void StandProc(int pno)
 {
     int nap, npar; //nof actual/formal parameters
     Item x, y, z;
+
     Check(LPAREN, "no (");
+
     npar = pno % 10;
     pno = pno / 10;
+
     expression(&x);
+
     nap = 1;
     if( sym == COMMA )
     {
         Get(&sym);
         expression(&y);
+
         nap = 2;
+
         z.type = noType;
         while( sym == COMMA )
         {
             Get(&sym);
             expression(&z);
+
             nap++;
         }
     }
@@ -1127,29 +1185,36 @@ void StandProc(int pno)
     {
         y.type = noType;
     }
+
     Check(RPAREN, "no )");
-    if( (npar == nap) || (pno == 0 || pno == 1) )
+
+    if( (npar == nap) || (pno == 0 || pno == 1) ) //why? (pno == 0 || pno == 1)? is it that for INC, DEC number of actual and formal parameters may mismatch? yes. inc(v)=>v+1, inc(v,n)=>v+n; same for dec()
     {
         if( pno == 0 || pno == 1 ) //INC, DEC
         {
             CheckInt(&x);
             CheckReadOnly(&x);
+
             if( y.type != noType )
             {
                 CheckInt(&y);
             }
+
             Increment(pno, &x, &y);
         }
         else if( pno == 2 || pno == 3 ) //INCL, EXCL
         {
             CheckSet(&x);
             CheckReadOnly(&x);
+
             CheckInt(&y);
+
             Include(pno-2, &x, &y);
         }
-        else if( pno == 4 )
+        else if( pno == 4 ) //ASSERT
         {
             CheckBool(&x);
+
             Assert(&x);
         }
         else if( pno == 5 ) //NEW
@@ -1164,21 +1229,25 @@ void StandProc(int pno)
                 Mark("not a pointer to record");
             }
         }
-        else if( pno == 6 )
+        else if( pno == 6 ) //PACK
         {
             CheckReal(&x);
-            CheckInt(&y);
             CheckReadOnly(&x);
+
+            CheckInt(&y);
+
             Pack(&x, &y);
         }
-        else if( pno == 7 )
+        else if( pno == 7 ) //UNPK
         {
             CheckReal(&x);
-            CheckInt(&y);
             CheckReadOnly(&x);
+
+            CheckInt(&y);
+
             Unpk(&x, &y);
         }
-        else if( pno == 8 )
+        else if( pno == 8 ) //LED
         {
             if( x.type->form <= Set )
             {
@@ -1189,58 +1258,80 @@ void StandProc(int pno)
                 Mark("bad type");
             }
         }
-        else if( pno == 10 )
+        else if( pno == 10 ) //GET
         {
             CheckInt(&x);
+
             _Get(&x, &y);
         }
-        else if( pno == 11 )
+        else if( pno == 11 ) //PUT
         {
             CheckInt(&x);
+
             Put(&x, &y);
         }
-        else if( pno == 12 )
+        else if( pno == 12 ) //COPY
         {
             CheckInt(&x);
             CheckInt(&y);
             CheckInt(&z);
+
             Copy(&x, &y, &z);
         }
-        else if( pno == 13 )
+        else if( pno == 13 ) //LDPSR
         {
             CheckConst(&x);
             CheckInt(&x);
+
             LDPSR(&x);
         }
-        else if( pno == 14 )
+        else if( pno == 14 ) //LDREG
         {
             CheckInt(&x);
+
             LDREG(&x, &y);
         }
     }
     else
     {
-        Mark("wrong nof parameters");
+        Mark("wrong no of parameters");
     }
 }
 
 void StatSequence();
 
+//CaseStatement = CASE expression OF case {'|' case} END
+//case = [CaseLabelList ':' StatementSequence]
+//CaseLabelList = LabelRange {',' LabelRange}
+//LabelRange = label ['..' label]
+//label = integer | string | qualident
+//ex. CASE myvar OF 1,3..5:Out.String("hi");Out.String("bye") | 6:Out.String("bye");Out.String("hi") END
+//
+//this consumes a case, not CaseStatement
+//this is only to consume cases of types
+//numeric case not yet implemented
 void TypeCase(Object obj, Item *x)
 {
     Object typobj=0;
+
     if( sym == IDENT )
     {
         qualident(&typobj);
+
         MakeItem(x, obj, level);
+
         if( typobj->class != Typ )
         {
             Mark("not a type");
         }
+
         TypeTest(x, typobj->type, FALSE);
-        obj->type = typobj->type;
+        obj->type = typobj->type; //change original type of variable to this case type
+
         CFJump(x);
+
         Check(COLON, ": expected");
+
         StatSequence();
     }
     else
@@ -1250,15 +1341,14 @@ void TypeCase(Object obj, Item *x)
     }
 }
 
-
 void SkipCase()
 {
     while( sym != COLON )
     {
-        Get(&sym);
+        Get(&sym); //consume other symbols till ':'
     }
-    Get(&sym);
-    StatSequence();
+    Get(&sym); //consume ':'
+    StatSequence(); //consume statements
 }
 
 void StatSequence()
@@ -1375,7 +1465,7 @@ void StatSequence()
                     {
                         Mark("missing parameters");
                     }
-                    
+
                     if( x.type->base->form == NoTyp )
                     {
                         PrepCall(&x, &rx);
@@ -1421,7 +1511,7 @@ void StatSequence()
 
                 StatSequence();
             }
-            
+
             if(sym == ELSE)
             {
                 Get(&sym);
@@ -1565,34 +1655,44 @@ void StatSequence()
 		//CaseLabelList = LabelRange {',' LabelRange}
 		//LabelRange = label ['..' label]
 		//label = integer | string | qualident
+		//ex. CASE myvar OF 1,3..5:Out.String("hi");Out.String("bye") | 6:Out.String("bye");Out.String("hi") END
         else if( sym == CASE )
         {
             Get(&sym);
             if( sym == IDENT )
             {
                 qualident(&obj);
-                orgtype = obj->type;
+
+                orgtype = obj->type; //save it here, because obj->type gets altered inside TypeCase
+
                 if( (orgtype->form == Pointer) || ((orgtype->form == Record) && (obj->class == Par)) )
                 {
                     Check(OF, "OF expected");
-                    TypeCase(obj, &x);
+
+                    TypeCase(obj, &x); //consumes a case, not CaseStatement
+
                     L0 = 0;
                     while( sym == BAR )
                     {
                         Get(&sym);
                         FJump(&L0);
                         Fixup(&x);
-                        obj->type = orgtype;
+
+                        obj->type = orgtype; //obj->type gets altered inside TypeCase, restore
+
                         TypeCase(obj, &x);
                     }
                     Fixup(&x);
                     FixLink(L0);
-                    obj->type = orgtype;
+
+                    obj->type = orgtype; //obj->type gets altered inside TypeCase, restore
                 }
                 else
                 {
                     Mark("numeric case not implemented");
+
                     Check(OF, "OF expected");
+
                     SkipCase();
                     while( sym == BAR )
                     {
@@ -1609,6 +1709,7 @@ void StatSequence()
         }
 
         CheckRegs();
+
         //StatementSequence = statement { ';' statement }
         if( sym == SEMICOLON )
         {
@@ -1625,7 +1726,6 @@ void StatSequence()
     (void)L0;
     (void)L1;
 }
-//************************
 
 void IdentList(int class, Object *first)
 {
