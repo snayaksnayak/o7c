@@ -1491,12 +1491,14 @@ void StatSequence()
         {
             Get(&sym);
             expression(&x);
+
             CheckBool(&x);
             CFJump(&x);
 
             Check(THEN, "no THEN");
 
             StatSequence();
+
             L0 = 0;
             while(sym == ELSIF)
             {
@@ -1504,6 +1506,7 @@ void StatSequence()
                 FJump(&L0);
                 Fixup(&x);
                 expression(&x);
+                
                 CheckBool(&x);
                 CFJump(&x);
 
@@ -1517,6 +1520,7 @@ void StatSequence()
                 Get(&sym);
                 FJump(&L0);
                 Fixup(&x);
+                
                 StatSequence();
             }
             else
@@ -1529,31 +1533,26 @@ void StatSequence()
             Check(END, "no END");
         }
 		//WhileStatement = WHILE expression DO StatementSequence {ELSIF expression DO StatementSequence} END
-        else if(
-
-            sym == WHILE
-
-        )
+        else if( sym == WHILE )
         {
             Get(&sym);
             L0 = Here();
             expression(&x);
+            
             CheckBool(&x);
             CFJump(&x);
 
             Check(DO, "no DO");
 
             StatSequence();
+            
             BJump(L0);
-            while(
-
-                sym == ELSIF
-
-            )
+            while( sym == ELSIF )
             {
                 Get(&sym);
                 Fixup(&x);
                 expression(&x);
+                
                 CheckBool(&x);
                 CFJump(&x);
 
@@ -1565,28 +1564,20 @@ void StatSequence()
             Fixup(&x);
 
             Check(END, "no END");
-
-
-
         }
 		//RepeatStatement = REPEAT StatementSequence UNTIL expression
-        else if(
-
-            sym == REPEAT
-
-        )
+        else if( sym == REPEAT )
         {
             Get(&sym);
             L0 = Here();
+            
             StatSequence();
-            if(
-
-                sym == UNTIL
-
-            )
+            
+            if( sym == UNTIL )
             {
                 Get(&sym);
                 expression(&x);
+                
                 CheckBool(&x);
                 CBJump(&x, L0);
             }
@@ -1602,24 +1593,33 @@ void StatSequence()
             if( sym == IDENT )
             {
                 qualident(&obj);
+                
                 MakeItem(&x, obj, level);
+                
                 CheckInt(&x);
                 CheckReadOnly(&x);
+                
                 if( sym == BECOMES )
                 {
                     Get(&sym);
                     expression(&y);
+                
                     CheckInt(&y);
                     For0(&x, &y);
+                
                     L0 = Here();
                     Check(TO, "no TO");
+                    
                     expression(&z);
+                    
                     CheckInt(&z);
+                    
                     obj->rdo = 1;
                     if( sym == BY )
                     {
                         Get(&sym);
                         expression(&w);
+                        
                         CheckConst(&w);
                         CheckInt(&w);
                     }

@@ -1553,3 +1553,54 @@ PROCEDURE P(x:INTEGER):INTEGER;
 //Put1(Add, SP, SP, 4); //reduce stack
 //Put3(BR, 7, LNK); //jump to link reg
 
+#if 0
+//functions of obp.c
+
+int CompTypes(Type t0, Type t1, int varpar);
+int EqualSignatures(Type t0, Type t1);
+int IsExtension(Type t0, Type t1);
+
+void CheckBool(Item *x);
+void CheckConst(Item *x);
+void CheckInt(Item *x);
+void CheckReadOnly(Item *x);
+void CheckReal(Item *x);
+void CheckSet(Item *x);
+void CheckSetVal(Item *x);
+void element(Item *x);
+void expression(Item *x);
+void factor(Item *x);
+void ParamList(Item *x);
+void selector(Item *x);
+void set(Item *x);
+void SimpleExpression(Item *x);
+void StandFunc(Item *x, int fct, Type restyp);
+void term(Item *x);
+void TypeTest(Item *x, Type T, int guard);
+
+void CheckExport(int *expo);
+void Check(int s, char *msg);
+void CheckRecLevel(int lev);
+void Declarations(int *varsize);
+void FPSection(int *adr, int *nofpar);
+void StandProc(int pno);
+
+void IdentList(int class, Object *first);
+void Parameter(Object par);
+void qualident(Object *obj);
+void TypeCase(Object obj, Item *x);
+
+void Compile();
+void initObp();
+void _Module();
+void Option();
+void ProcedureDecl();
+void StatSequence();
+
+void ArrayType(Type *type);
+void FormalType(Type *typ, int dim);
+void ProcedureType(Type ptype, int *parblksize);
+void RecordType(Type *type);
+void _Type(Type *type);
+
+#endif

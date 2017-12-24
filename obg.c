@@ -573,9 +573,12 @@ void MakeItem(Item* x, Object y, int curlev)
 {
     x->mode = y->class;
     x->type = y->type;
+    
     x->a = y->val;
+    
     x->rdo = y->rdo;
-    if( y->class == Par )
+    
+    if( y->class == Par ) //parameter declared with VAR 
     {
         x->b = 0;
     }
