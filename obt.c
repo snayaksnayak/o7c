@@ -34,6 +34,42 @@ Object topScope, universe, System;
 Type byteType, boolType, charType, intType, realType, setType, nilType, noType, strType;
 int nofmod, Ref;
 Type typtab[MAXTYPTAB]; //each entry points to a TypeDesc struct
+
+//declarations
+int ASR(int x, int n);
+unsigned int ROR(unsigned int x, int n);
+void NEW(void **p, int size);
+
+void NewObj(Object *obj, char *id, int class);
+Object thisfield(Type rec);
+Object thisimport(Object mod);
+Object ThisModule(char* name, char *orgname, int non, int key);
+Object thisObj();
+
+Type type(int ref, int form, int size);
+
+void CloseScope();
+void initObt();
+void InitSymbolTable();
+void OpenScope();
+
+void enter(char *name, int cl, Type type, int n);
+void Export(char* modid, int *newSF, int *key);
+void Import(char *modid, char *modid1);
+
+void MakeFileName(char *FName, char *name, char *ext);
+int file_length(FILE *f);
+void FindHiddenPointers(FILE *R, Type typ, int offset);
+void InType(FILE *R, Object thismod, Type *T);
+void OutPar( FILE *R, Object par, int n);
+void OutType(FILE *R, Type t);
+void Read(FILE *R, int *x);
+void ReadNum(FILE* R, int* x);
+void ReadString(FILE *R, char *buf, int bufsize);
+void Write(FILE *R, int x);
+void WriteNum(FILE* R, int x);
+void WriteString(FILE *R, char *buf);
+
 void NEW(void **p, int size)
 {
     *p = malloc(size);

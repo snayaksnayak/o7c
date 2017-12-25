@@ -60,6 +60,21 @@ int MUL = 1, RDIV = 2, DIV = 3, MOD = 4, AND = 5, //MulOperator = '*' | '/' | DI
     ARRAY = 60, RECORD = 61, POINTER = 62,
     CONST = 63, TYPE = 64, VAR = 65, PROCEDURE = 66, BEGIN = 67, IMPORT = 68, MODULE = 69, EOT = 70; //eof = EOT
 
+//declarations
+float ten(int e);
+int pos();
+void comment();
+void CopyId(char *ident);
+void enter_kw(int sym, char* name);
+void Get(int *sym);
+void hexstring();
+void identifier(int *sym);
+void initObs();
+void initScanner(FILE* f, int pos);
+void Mark(char * msg);
+void number(int *sym);
+void string();
+
 //fills keytab[] with language keywords
 void enter_kw(int sym, char* name)
 {

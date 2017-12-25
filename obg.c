@@ -89,6 +89,124 @@ int varsize; //data index; holds whole size of total variables declared in a mod
 char _str[maxStrx]; //coniains all string literals
 int strx; //global string length counter
 
+//declarations
+void Put0(int op, int a, int b, int c);
+void Put1(int op, int a, int b, int im);
+void Put1a(int op, int a, int b, int im);
+void Put2(int op, int a, int b, int off);
+void Put3(int op, int cond, int off);
+
+int Here();
+void CheckRegs();
+void Header();
+void incR();
+void initObg();
+void invalSB();
+void NilCheck();
+
+void Close(char* modid, int key, int nofent);
+void Enter(int parblksize, int locblksize, int internal);
+void Open(int v);
+void SetDataSize(int dc);
+
+int merged(int L0, int L1);
+int negated(int cond);
+void BJump(int L);
+void CBJump(Item* x, int L);
+void CFJump(Item* x);
+void fix(int at, int with);
+void FixLink(int L);
+void FixLinkWith(int L0, int dst);
+void FJump(int *L);
+void GetSB(int base);
+void RestoreRegs(int r); //R[0 .. r-1]
+void SaveRegs(int r);
+void Trap(int cond, int num);
+
+int NofPtrs(Type typ);
+void BuildTD(Type T, int* dc);
+void FindPtrFlds(Type typ, int off, int *dcw);
+void loadTypTagAdr(Type T);
+void Q(Type T, int *dcw);
+
+int _log2(int m, int* e);
+void Abs(Item* x);
+void ADC(Item* x, Item* y);
+void AddOp(int op, Item* x, Item *y);   // x := x +- y
+void Adr(Item* x);
+void And1(Item* x);   //x := x &
+void And2(Item* x, Item* y);
+void Assert(Item* x);
+void Bit(Item* x, Item* y);
+void Call(Item* x, int r);
+void Condition(Item* x);
+void Copy(Item* x, Item* y , Item* z);
+void CopyString(Item*x, Item* y);  //x := y
+void DeRef(Item* x);
+void DivOp(int op, Item* x, Item* y);   // x := x op y
+void Field(Item* x, Object y); // x := x.y
+void Fixup(Item* x);
+void Float(Item* x);
+void Floor(Item* x);
+void For0(Item* x, Item* y);
+void For1(Item* x, Item* y, Item* z, Item* w, int* L);
+void For2(Item* x, Item* y, Item* w);
+void _Get(Item* x, Item* y);
+void H(Item* x);
+void Include(int inorex, Item* x, Item* y);
+void Increment(int upordown, Item* x, Item* y);
+void Index(Item* x, Item* y); //x := x[y]
+void In(Item* x, Item* y);  // x := x IN y
+void IntRelation(int op, Item* x, Item* y);   // x := x < y
+void LDPSR(Item* x);
+void LDREG(Item* x, Item* y);
+void Led(Item* x);
+void Len(Item* x);
+void loadAdr(Item* x);
+void loadCond(Item* x);
+void load(Item* x);
+void loadStringAdr(Item* x);
+void MakeConstItem(Item* x, Type typ, int val);
+void MakeItem(Item* x, Object y, int curlev);
+void MakeRealItem(Item* x, float val);
+void MakeStringItem(Item* x, int len);
+void MulOp(Item* x, Item* y);   //x := x * y
+void Neg(Item* x);   // x := -x
+void New(Item* x);
+void Not(Item* x);   //x := ~x
+void Odd(Item* x);
+void OpenArrayParam(Item* x);
+void Or1(Item* x);   //x := x OR
+void Or2(Item* x, Item* y);
+void Ord(Item* x);
+void Pack(Item* x, Item* y);
+void PrepCall(Item* x, int* r);
+void Put(Item* x, Item* y);
+void RealOp(int op, Item* x, Item* y);   // x := x op y
+void RealRelation(int op, Item* x, Item* y );   // x := x < y
+void Register(Item* x);
+void Return(int form, Item* x, int size, int internal);
+void SBC(Item* x, Item* y);
+void SetCC(Item *x, int n);
+void _Set(Item* x, Item* y);   // x := {x .. y}
+void SetOp(int op, Item* x, Item* y);   // x := x op y
+void Shift(int fct, Item* x, Item* y);
+void Singleton(Item* x);  // x := {x}
+void Store(Item* x, Item* y); //x := y
+void StoreStruct(Item* x, Item* y); // x := y, frame = 0
+void StringParam(Item* x);
+void StringRelation(int op, Item* x, Item* y);   // x := x < y
+void StrToChar(Item* x );
+void _TypeTest(Item* x, Type T, int varpar, int isguard);
+void UML(Item* x, Item* y);
+void Unpk(Item* x, Item* y);
+void ValueParam(Item* x);
+void VarParam(Item* x, Type ftype);
+
+void FindPtrs(FILE* R, Type typ, int adr);
+void WriteByte(FILE *R, int x);
+void WriteInt(FILE *R, int x);
+
 //emit Format0 instructions
 void Put0(int op, int a, int b, int c)
 {
