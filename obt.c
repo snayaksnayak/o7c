@@ -472,7 +472,7 @@ void InType(FILE *R, Object thismod, Type *T)
             {
                 *T = obj->type;
             }
-            else //insert new type object in object list of mod
+            else //create a new 'Typ' object for mod
             {
                 NEW((void **)&obj, sizeof(ObjDesc));
                 strcpy(obj->name, name);
@@ -612,7 +612,6 @@ void WriteString(FILE *R, char *buf)
     while(c != '\0');
 }
 
-void OutType(FILE *R, Type t);
 void OutPar( FILE *R, Object par, int n)
 {
     int cl;

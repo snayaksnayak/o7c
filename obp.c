@@ -63,27 +63,28 @@ void TypeTest(Item *x, Type T, int guard);
 void CheckExport(int *expo);
 void Check(int s, char *msg);
 void CheckRecLevel(int lev);
-void Declarations(int *varsize);
 void FPSection(int *adr, int *nofpar);
 void StandProc(int pno);
 
-void IdentList(int class, Object *first);
+void Declarations(int *varsize); //creates Const and Typ ObjDesc via NewObj
+void IdentList(int class, Object *first); //creates ObjDesc via NewObj
+void qualident(Object *obj); //finds required ObjDesc from symbol table
 void Parameter(Object par);
-void qualident(Object *obj);
 void TypeCase(Object obj, Item *x);
 
 void Compile();
 void initObp();
 void _Module();
 void Option();
-void ProcedureDecl();
+void SkipCase();
 void StatSequence();
 
-void ArrayType(Type *type);
-void FormalType(Type *typ, int dim);
+void ArrayType(Type *type); //creates its TypeDesc
+void RecordType(Type *type); //creates its TypeDesc; creates ObjDesc for fields
+void _Type(Type *type); //creates TypeDesc for pointer and procedure
+void ProcedureDecl(); //creates its TypeDesc; creates its ObjDesc via NewObj
 void ProcedureType(Type ptype, int *parblksize);
-void RecordType(Type *type);
-void _Type(Type *type);
+void FormalType(Type *typ, int dim); //creates TypeDesc for array and procedure parameter
 
 void initObp()
 {
@@ -404,7 +405,6 @@ void selector(Item *x)
     }
 }
 
-int CompTypes(Type t0, Type t1, int varpar);
 int EqualSignatures(Type t0, Type t1)
 {
     Object p0, p1;
@@ -816,6 +816,16 @@ void factor(Item *x)
 
     //factor = number | string | NIL | TRUE | FALSE | set | designator [ActualParameters] | '(' expression ')' | '~' factor
     //designator = qualident {selector}
+    //qualident = [ ident '.' ] ident
+    //selector = '.' ident | '[' ExpList ']' | '^' | '(' qualident ')'
+    //ex. 3 | "z" | "hi" | NIL | TRUE | FALSE | {1, 2} (these are factor)
+    // | SET | BOOLEAN | BYTE | INTEGER | REAL | myvar (these are ident, so qualident, so designator, so factor)
+    // | mymodule.myvar (this is qualident, so designator, so factor)
+    // | record.element (this is designator, so factor)
+    // | myproc(9,6) | FLOOR(3.4) | (6*7) | ~mybool (these are factor)
+    // | mymodule.myvar[i] | array[rowindex, columnindex] (these are designator, so factor)
+    // | recordpointer^.element (equals to recordpointer.element) (this is designator, so factor)
+    // | p(Circle).radius (here p is of type Figure) (this is designator, so factor)
     if( sym == IDENT )
     {
         qualident(&obj);
@@ -1339,8 +1349,6 @@ void StandProc(int pno)
         Mark("wrong no of parameters");
     }
 }
-
-void StatSequence();
 
 //CaseStatement = CASE expression OF case {'|' case} END
 //case = [CaseLabelList ':' StatementSequence]
@@ -1943,7 +1951,7 @@ void RecordType(Type *type)
                 Mark("mult def");
             }
 
-			//new field! create ObjDesc
+			//new field found, create ObjDesc
             NEW((void **)&new, sizeof(ObjDesc));
             CopyId(new->name);
             new->class = Fld;
