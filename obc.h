@@ -45,16 +45,16 @@ extern int MUL, RDIV, DIV, MOD, AND,
        RECORD, POINTER, CONST, TYPE, VAR,
        PROCEDURE, BEGIN, IMPORT, MODULE, EOT;
 
-void initObs();
-void initScanner(FILE* f, int pos);
+int pos();
+void CopyId(char *ident);
 void enter_kw(int sym, char* name);
 void Get(int *sym);
-void Mark(char * msg);
-void CopyId(char *ident);
-int pos();
-void WriteString(FILE *R, char *buf);
+void initObs();
+void initScanner(FILE* f, int pos);
 void MakeFileName(char *FName, char *name, char *ext);
+void Mark(char * msg);
 void Write(FILE *R, int x);
+void WriteString(FILE *R, char *buf);
 
 //****interface to symbol table****
 
@@ -140,23 +140,23 @@ typedef struct TypeDesc
 extern Object topScope, System;
 extern Type byteType, boolType, charType, intType, realType, setType, nilType, noType, strType;
 
+Object thisfield(Type rec);
+Object thisimport(Object mod);
+Object thisObj();
+void CloseScope();
+void Export(char* modid, int *newSF, int *key);
+void Import(char *modid, char *modid1);
 void initObt();
 void InitSymbolTable();
-void NEW(void **p, int size);
-void NewObj(Object *obj, char *id, int class);
-Object thisObj();
-Object thisimport(Object mod);
-Object thisfield(Type rec);
-void OpenScope();
-void CloseScope();
 void MakeFileName(char *FName, char *name, char *ext);
-void Import(char *modid, char *modid1);
-void Export(char* modid, int *newSF, int *key);
+void NewObj(Object *obj, char *id, int class);
+void NEW(void **p, int size);
+void OpenScope();
 
 //****interface to parser****
 
-void initObp();
 void Compile();
+void initObp();
 
 //****interface to code generator****
 
@@ -209,93 +209,91 @@ typedef struct Item
 //The more addressing modes a computer offers,
 //the more item modes are needed to represent them.
 
-
 extern int WordSize;
 extern int pc;
 
-void initObg();
-void MakeConstItem(Item *x, Type typ, int val);
-void MakeRealItem(Item *x, float val);
-void MakeStringItem(Item *x, int len); //copies string from ORS-buffer to ORG-string array
-void MakeItem(Item *x, Object y, int curlev);
-void Open(int v);
-void SetDataSize(int dc);
-void Header();
-void StrToChar(Item *x);
-void BuildTD(Type T, int *dc);
 int Here();
-void FixLink(int L);
-void FJump(int *L);
-void CheckRegs();
-void Field(Item* x, Object y);
-void DeRef(Item* x);
-void Index(Item* x, Item* y);
-void _TypeTest(Item* x, Type T, int varpar, int isguard);
-void Not(Item* x);
+void Abs(Item* x);
+void ADC(Item* x, Item* y);
+void AddOp(int op, Item* x, Item *y);
+void Adr(Item* x);
 void And1(Item* x);
 void And2(Item* x, Item* y);
-void Or1(Item* x);
-void Or2(Item* x, Item* y);
-void Neg(Item* x);
-void AddOp(int op, Item* x, Item *y);
-void MulOp(Item* x, Item* y);
-void DivOp(int op, Item* x, Item* y);
-void RealOp(int op, Item* x, Item* y);
-void Singleton(Item* x);
-void _Set(Item* x, Item* y);
-void In(Item* x, Item* y);
-void SetOp(int op, Item* x, Item* y);
-void IntRelation(int op, Item* x, Item* y);
-void RealRelation(int op, Item* x, Item* y );
-void StringRelation(int op, Item* x, Item* y);
-void StrToChar(Item* x );
-void Store(Item* x, Item* y);
-void StoreStruct(Item* x, Item* y);
+void Assert(Item* x);
+void Bit(Item* x, Item* y);
+void BJump(int L);
+void BuildTD(Type T, int *dc);
+void Call(Item* x, int r);
+void CBJump(Item* x, int L);
+void CFJump(Item* x);
+void CheckRegs();
+void Close(char* modid, int key, int nofent);
+void Condition(Item* x);
+void Copy(Item* x, Item* y , Item* z);
 void CopyString(Item*x, Item* y);
-void VarParam(Item* x, Type ftype);
-void ValueParam(Item* x);
-void OpenArrayParam(Item* x);
-void StringParam(Item* x);
+void DeRef(Item* x);
+void DivOp(int op, Item* x, Item* y);
+void Enter(int parblksize, int locblksize, int internal);
+void Field(Item* x, Object y);
+void FixLink(int L);
+void Fixup(Item* x);
+void FJump(int *L);
+void Float(Item* x);
+void Floor(Item* x);
 void For0(Item* x, Item* y);
 void For1(Item* x, Item* y, Item* z, Item* w, int* L);
 void For2(Item* x, Item* y, Item* w);
-void CFJump(Item* x);
-void BJump(int L);
-void CBJump(Item* x, int L);
-void Fixup(Item* x);
-void PrepCall(Item* x, int* r);
-void Call(Item* x, int r);
-void Enter(int parblksize, int locblksize, int internal);
-void Return(int form, Item* x, int size, int internal);
-void Increment(int upordown, Item* x, Item* y);
-void Include(int inorex, Item* x, Item* y);
-void Assert(Item* x);
-void New(Item* x);
-void Pack(Item* x, Item* y);
-void Unpk(Item* x, Item* y);
-void Led(Item* x);
 void _Get(Item* x, Item* y);
-void Put(Item* x, Item* y);
-void Copy(Item* x, Item* y , Item* z);
+void Header();
+void H(Item* x);
+void Include(int inorex, Item* x, Item* y);
+void Increment(int upordown, Item* x, Item* y);
+void Index(Item* x, Item* y);
+void In(Item* x, Item* y);
+void initObg();
+void IntRelation(int op, Item* x, Item* y);
 void LDPSR(Item* x);
 void LDREG(Item* x, Item* y);
-void Abs(Item* x);
-void Odd(Item* x);
-void Floor(Item* x);
-void Float(Item* x);
-void Ord(Item* x);
+void Led(Item* x);
 void Len(Item* x);
-void Shift(int fct, Item* x, Item* y);
-void ADC(Item* x, Item* y);
-void SBC(Item* x, Item* y);
-void UML(Item* x, Item* y);
-void Bit(Item* x, Item* y);
+void MakeConstItem(Item *x, Type typ, int val);
+void MakeItem(Item *x, Object y, int curlev);
+void MakeRealItem(Item *x, float val);
+void MakeStringItem(Item *x, int len); //copies string from ORS-buffer to ORG-string array
+void MulOp(Item* x, Item* y);
+void Neg(Item* x);
+void New(Item* x);
+void Not(Item* x);
+void Odd(Item* x);
+void OpenArrayParam(Item* x);
+void Open(int v);
+void Or1(Item* x);
+void Or2(Item* x, Item* y);
+void Ord(Item* x);
+void Pack(Item* x, Item* y);
+void PrepCall(Item* x, int* r);
+void Put(Item* x, Item* y);
+void RealOp(int op, Item* x, Item* y);
+void RealRelation(int op, Item* x, Item* y );
 void Register(Item* x);
-void H(Item* x);
-void Adr(Item* x);
-void Condition(Item* x);
-void Close(char* modid, int key, int nofent);
-
+void Return(int form, Item* x, int size, int internal);
+void SBC(Item* x, Item* y);
+void SetDataSize(int dc);
+void _Set(Item* x, Item* y);
+void SetOp(int op, Item* x, Item* y);
+void Shift(int fct, Item* x, Item* y);
+void Singleton(Item* x);
+void Store(Item* x, Item* y);
+void StoreStruct(Item* x, Item* y);
+void StringParam(Item* x);
+void StringRelation(int op, Item* x, Item* y);
+void StrToChar(Item *x);
+void StrToChar(Item* x );
+void _TypeTest(Item* x, Type T, int varpar, int isguard);
+void UML(Item* x, Item* y);
+void Unpk(Item* x, Item* y);
+void ValueParam(Item* x);
+void VarParam(Item* x, Type ftype);
 
 //Recursive Parsing Strategy:
 //---------------------------
