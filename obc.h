@@ -59,16 +59,26 @@ void WriteString(FILE *R, char *buf);
 //****interface to symbol table****
 
 extern int versionkey;
+
 //we associate each type of objects with a number
 //these constants represent types of objects
 extern int Head, Const, Var, Par, Fld, Typ,
        SProc, SFunc, Mod;
+
+//class values
+//Head = 0, Const = 1, Var = 2, Par = 3, Fld = 4, Typ = 5,
+//SProc = 6, SFunc = 7, Mod = 8;
 
 //we associate each predefined datatype with a number
 //these constants represent predefined datatype number
 extern int Byte, Bool, Char, Int, Real, Set,
        Pointer, NilTyp, NoTyp, Proc,
        String, Array, Record;
+
+//form values
+//Byte = 1, Bool = 2, Char = 3, Int = 4, Real = 5, Set = 6,
+//Pointer = 7, NilTyp = 8, NoTyp = 9, Proc = 10,
+//String = 11, Array = 12, Record = 13;
 
 //forward declaration
 typedef struct ObjDesc ObjDesc, *Object;
@@ -92,11 +102,11 @@ typedef struct ObjDesc
 	//Object classes and the meaning of "val":
 	//    class    val
 	//    ----------
-	//    Var      address
-	//    Par      address
+	//    Var      offset
+	//    Par      offset
 	//    Const    value
 	//    Fld      offset
-	//    Typ      type descriptor (TypeDesc) address? seems 0 instead
+	//    Typ      TypeDesc address? seems 0 instead
 	//    SProc    built-in procedure number
 	//    SFunc    built-in function number
 	//    Mod      key
@@ -180,10 +190,10 @@ typedef struct Item
 //Const    String        -      str addr      len(str+'\0')
 //Const    Bool          -      0/1           -
 //Const    Proc          -      -             (proc addr)
-//Var                    base   off           -                   (direct addr)
-//Par                    -      off0          off1              (indirect addr)
-//Fld                    -      -             -
-//Typ                    -      -             -
+//Var                    -      off           -               (direct addr)
+//Par                    -      off           0               (indirect addr)
+//Fld                    -      off           -
+//Typ                    -      TypeDesc addr -
 //----------------------------------------------------------
 //Reg                    regno  -             -
 //RegI                   regno  off           -
@@ -294,6 +304,18 @@ void UML(Item* x, Item* y);
 void Unpk(Item* x, Item* y);
 void ValueParam(Item* x);
 void VarParam(Item* x, Type ftype);
+
+//****some helper functions****
+extern int linenum;
+extern char* instr[];
+extern char* reg[];
+extern char* condcode[];
+extern char* symbol[];
+void print_sym();
+void print_put0_asm(int pc, int op, int a, int b, int c);
+void print_put1_asm(int pc, int op, int a, int b, int im);
+void print_put2_asm(int pc, int op, int a, int b, int off);
+void print_put3_asm(int pc, int op, int cond, int off);
 
 //Recursive Parsing Strategy:
 //---------------------------

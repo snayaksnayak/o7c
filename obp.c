@@ -1556,7 +1556,7 @@ void StatSequence()
                 FJump(&L0);
                 Fixup(&x);
                 expression(&x);
-                
+
                 CheckBool(&x);
                 CFJump(&x);
 
@@ -1570,7 +1570,7 @@ void StatSequence()
                 Get(&sym);
                 FJump(&L0);
                 Fixup(&x);
-                
+
                 StatSequence();
             }
             else
@@ -1588,21 +1588,21 @@ void StatSequence()
             Get(&sym);
             L0 = Here();
             expression(&x);
-            
+
             CheckBool(&x);
             CFJump(&x);
 
             Check(DO, "no DO");
 
             StatSequence();
-            
+
             BJump(L0);
             while( sym == ELSIF )
             {
                 Get(&sym);
                 Fixup(&x);
                 expression(&x);
-                
+
                 CheckBool(&x);
                 CFJump(&x);
 
@@ -1620,14 +1620,14 @@ void StatSequence()
         {
             Get(&sym);
             L0 = Here();
-            
+
             StatSequence();
-            
+
             if( sym == UNTIL )
             {
                 Get(&sym);
                 expression(&x);
-                
+
                 CheckBool(&x);
                 CBJump(&x, L0);
             }
@@ -1643,33 +1643,33 @@ void StatSequence()
             if( sym == IDENT )
             {
                 qualident(&obj);
-                
+
                 MakeItem(&x, obj, level);
-                
+
                 CheckInt(&x);
                 CheckReadOnly(&x);
-                
+
                 if( sym == BECOMES )
                 {
                     Get(&sym);
                     expression(&y);
-                
+
                     CheckInt(&y);
                     For0(&x, &y);
-                
+
                     L0 = Here();
                     Check(TO, "no TO");
-                    
+
                     expression(&z);
-                    
+
                     CheckInt(&z);
-                    
+
                     obj->rdo = 1;
                     if( sym == BY )
                     {
                         Get(&sym);
                         expression(&w);
-                        
+
                         CheckConst(&w);
                         CheckInt(&w);
                     }
@@ -2078,7 +2078,7 @@ void FPSection(int *adr, int *nofpar)
         obj->class = cl;
         obj->type = tp;
         obj->rdo = rdo;
-        obj->lev = level;
+        obj->lev = level; //if a variable is local to a procedure, level is > 0. formal parameters are local to procedures.
         obj->val = *adr; //starts from 4 in case of procedure declaration, but starts from 0 in case of procedure variable and procedure parameter
         *adr = *adr + parsize; //either 4 or 8
         obj = obj->next;
@@ -2883,4 +2883,28 @@ void Compile()
     Option(); //set compiler options
     initScanner(f, 0);
     _Module();
+}
+
+void print_sym()
+{
+	if( sym == IDENT )
+    {
+		printf("\nline %d: %s", linenum, id);
+	}
+	else if (sym == IDENT || sym == CHAR)
+	{
+		printf("\nline %d: %d", linenum, ival);
+	}
+	else if (sym == REAL)
+	{
+		printf("\nline %d: %f", linenum, rval);
+	}
+	else if (sym == STRING)
+	{
+		printf("\nline %d: %s", linenum, str);
+	}
+	else
+	{
+		printf("\nline %d: %s", linenum, symbol[sym]);
+	}
 }

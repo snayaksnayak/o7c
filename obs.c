@@ -75,6 +75,23 @@ void Mark(char * msg);
 void number(int *sym);
 void string();
 
+int linenum;
+char* symbol[71] = { "unknown",
+	"*", "/", "DIV", "%", "&",
+	"+", "-", "OR",
+	"=", "#", "<", "<=", ">", ">=", "IN", "IS",
+	"^", ".",
+	"unknown",
+	"CHAR", "INTEGER", "REAL", "FALSE", "TRUE", "NIL", "STRING", "~", "(", "[", "{", "identifier",
+	"IF", "unknown", "WHILE", "REPEAT", "CASE", "FOR",
+	"unknown", "unknown",
+	",", ":", ":=", "..", ")", "]", "}",
+	"THEN", "OF", "DO", "TO", "BY", ";", "END", "|", "ELSE", "ELSIF", "UNTIL", "RETURN",
+	"unknown",
+	"ARRAY", "RECORD", "POINTER",
+	"CONST", "TYPE", "VAR", "PROCEDURE", "BEGIN", "IMPORT", "MODULE", "EOF"
+};
+
 //fills keytab[] with language keywords
 void enter_kw(int sym, char* name)
 {
@@ -528,6 +545,10 @@ void Get(int *sym)
     {
         while( !feof(f) && (ch <= ' '))
         {
+			if (ch == 0x0A)
+            {
+				linenum++;
+			}
             ch = fgetc(f); //ignore control characters which are <= Space(or 32)
         }
 
@@ -766,6 +787,8 @@ void initScanner(FILE* f, int pos)
     fseek(f, pos, SEEK_SET);
     //read one character so that scanner Get() will proceed in a loop
     ch = fgetc(f);
+
+    linenum = 0;
 }
 
 //copies identifier name from scanner variable id[] to desired destination
@@ -773,3 +796,4 @@ void CopyId(char *ident)
 {
     strcpy(ident, id);
 }
+

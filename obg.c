@@ -207,29 +207,122 @@ void FindPtrs(FILE* R, Type typ, int adr);
 void WriteByte(FILE *R, int x);
 void WriteInt(FILE *R, int x);
 
+char* instr[16] =  {"MOV", "LSL", "ASR", "ROR",
+					"AND", "ANN", "IOR", "XOR",
+					"ADD", "SUB", "MUL", "DIV",
+					"FAD", "FSB", "FML", "FDV"};
+char* reg[16] =    {"R0", "R1", "R2", "R3",
+					"R4", "R5", "R6", "R7",
+					"R8", "R9", "R10", "R11",
+					"MT", "SB", "SP", "LNK"};
+char* condcode[16] =   {"MI", "EQ", "CS", "VS",
+					"LS", "LT", "LE", "TR",
+					"PL", "NE", "CC", "VC",
+					"HI", "GE", "GT", "FL"};
+
 //emit Format0 instructions
 void Put0(int op, int a, int b, int c)
 {
     //emit format-0 instruction
     code[pc] = ((a*0x10 + b) * 0x10 + op) * 0x10000 + c;
     pc++;
-    printf("\npos = %d", pos());
-    printf("\nPut0: op=%d a=%d b=%d c=%d", op, a, b, c);
-    printf("\n%#x\n", code[pc-1]);
+    //printf("\npos = %d", pos());
+    //printf("\nPut0: op=%d a=%d b=%d c=%d", op, a, b, c);
+    //printf("\n%#x\n", code[pc-1]);
+    print_sym();
+    print_put0_asm(pc-1, op, a, b, c);
+    printf("\n");
+}
+
+void print_put0_asm(int pc, int op, int a, int b, int c)
+{
+	printf("\ncode[%d]: ", pc);
+	switch(op)
+	{
+		case 0:
+		{
+			printf("%s %s, 0, %s", instr[op], reg[a], reg[c]);
+			break;
+		}
+		case 1:
+		case 2:
+		case 3:
+		case 4:
+		case 5:
+		case 6:
+		case 7:
+		case 8:
+		case 9:
+		case 10:
+		case 11:
+		case 12:
+		case 13:
+		case 14:
+		case 15:
+		{
+			printf("%s %s, %s, %s", instr[op], reg[a], reg[b], reg[c]);
+			break;
+		}
+		default:
+		{
+			printf("unknown asm");
+		}
+	}
 }
 
 //emit Format1 instructions when im is 16bit, i.e. -0x10000 <= im < 0x10000
 void Put1(int op, int a, int b, int im)
 {
+	int temp_op = op;
+
     if( im < 0 )
     {
         op = op + V;
     }
     code[pc] = (((a+0x40) * 0x10 + b) * 0x10 + op) * 0x10000 + (im & 0xFFFF);
     pc++;
-    printf("\npos = %d", pos());
-    printf("\nPut1: op=%d a=%d b=%d im=%d", op, a, b, im);
-    printf("\n%#x\n", code[pc-1]);
+    //printf("\npos = %d", pos());
+    //printf("\nPut1: op=%d a=%d b=%d im=%d", op, a, b, im);
+    //printf("\n%#x\n", code[pc-1]);
+	print_sym();
+    print_put1_asm(pc-1, temp_op, a, b, im);
+    printf("\n");
+}
+
+void print_put1_asm(int pc, int op, int a, int b, int im)
+{
+	printf("\ncode[%d]: ", pc);
+	switch(op)
+	{
+		case 0:
+		{
+			printf("%s %s, 0, %d", instr[op], reg[a], im);
+			break;
+		}
+		case 1:
+		case 2:
+		case 3:
+		case 4:
+		case 5:
+		case 6:
+		case 7:
+		case 8:
+		case 9:
+		case 10:
+		case 11:
+		case 12:
+		case 13:
+		case 14:
+		case 15:
+		{
+			printf("%s %s, %s, %d", instr[op], reg[a], reg[b], im);
+			break;
+		}
+		default:
+		{
+			printf("unknown asm");
+		}
+	}
 }
 
 //emit Format1 instructions when im is 32bit
@@ -256,9 +349,44 @@ void Put2(int op, int a, int b, int off)
 {
     code[pc] = ((op * 0x10 + a) * 0x10 + b) * 0x100000 + (off & 0xFFFFF);
     pc++;
-    printf("\npos = %d", pos());
-    printf("\nPut2: op=%d a=%d b=%d off=%d", op, a, b, off);
-    printf("\n%#x\n", code[pc-1]);
+    //printf("\npos = %d", pos());
+    //printf("\nPut2: op=%d a=%d b=%d off=%d", op, a, b, off);
+    //printf("\n%#x\n", code[pc-1]);
+    print_sym();
+    print_put2_asm(pc-1, op, a, b, off);
+    printf("\n");
+}
+
+void print_put2_asm(int pc, int op, int a, int b, int off)
+{
+	printf("\ncode[%d]: ", pc);
+	switch(op)
+	{
+		case 8:
+		{
+			printf("LDW %s, %s, %d", reg[a], reg[b], off);
+			break;
+		}
+		case 9:
+		{
+			printf("LDB %s, %s, %d", reg[a], reg[b], off);
+			break;
+		}
+		case 10:
+		{
+			printf("STW %s, %s, %d", reg[a], reg[b], off);
+			break;
+		}
+		case 11:
+		{
+			printf("STB %s, %s, %d", reg[a], reg[b], off);
+			break;
+		}
+		default:
+		{
+			printf("unknown asm");
+		}
+	}
 }
 
 //emit branch instruction
@@ -266,9 +394,44 @@ void Put3(int op, int cond, int off)
 {
     code[pc] = ((op+12) * 0x10 + cond) * 0x1000000 + (off & 0xFFFFFF);
     pc++;
-    printf("\npos = %d", pos());
-    printf("\nPut3: op=%d cond=%d off=%d", op, cond, off);
-    printf("\n%#x\n", code[pc-1]);
+    //printf("\npos = %d", pos());
+    //printf("\nPut3: op=%d cond=%d off=%d", op, cond, off);
+    //printf("\n%#x\n", code[pc-1]);
+    print_sym();
+    print_put3_asm(pc-1, op, cond, off);
+    printf("\n");
+}
+
+void print_put3_asm(int pc, int op, int cond, int off)
+{
+	printf("\ncode[%d]: ", pc);
+	switch(op)
+	{
+		case 0:
+		{
+			printf("BR %s, %s", condcode[cond], reg[off]);
+			break;
+		}
+		case 1:
+		{
+			printf("BLR %s, %s", condcode[cond], reg[off]);
+			break;
+		}
+		case 2:
+		{
+			printf("BC %s, %d", condcode[cond], off);
+			break;
+		}
+		case 3:
+		{
+			printf("BL %s, %d", condcode[cond], off);
+			break;
+		}
+		default:
+		{
+			printf("unknown asm");
+		}
+	}
 }
 
 //increament register stack top.
@@ -475,7 +638,7 @@ void load(Item* x)
                 }
                 else if( x->r == 0 )
                 {
-                    Put3(BL, 7, 0); //L: always goto pc+1+0, r15:=pc+1
+                    Put3(BL, 7, 0); //L: goto pc+1+0, r15:=pc+1
                     Put1a(Sub, RH, LNK, pc*4 - x->a); //L+1: rh:=r15-((L+1)*4 - x->a)
                 }
                 else //x->r is -ve
@@ -484,11 +647,11 @@ void load(Item* x)
                     Put1(Add, RH, SB, x->a + 0x100); //mark as progbase-relative
                 }
             }
-            else if( (x->a <= 0x0FFFF) && (x->a >= -0x10000) )
+            else if( (x->a <= 0x0FFFF) && (x->a >= -0x10000) ) //16bit value
             {
                 Put1(Mov, RH, 0, x->a);
             }
-            else
+            else //32bit value
             {
                 Put1(Mov+U, RH, 0, (x->a >> 16) & 0xFFFF);
                 if( (x->a & 0xFFFF) != 0 )
@@ -502,14 +665,14 @@ void load(Item* x)
         }
         else if( x->mode == Var )
         {
-            if( x->r > 0 )//local
+            if( x->r > 0 ) //if it is a local variable to a procedure
             {
-                Put2(op, RH, SP, x->a + frame);
+                Put2(op, RH, SP, x->a + frame); //get value from mem[SP+offset]
             }
-            else
+            else //if not local
             {
                 GetSB(x->r);
-                Put2(op, RH, SB, x->a);
+                Put2(op, RH, SB, x->a); //get value from mem[SB+offset]
             }
 
             x->r = RH;
@@ -517,8 +680,8 @@ void load(Item* x)
         }
         else if( x->mode == Par )
         {
-            Put2(Ldr, RH, SP, x->a + frame);
-            Put2(op, RH, RH, x->b);
+            Put2(Ldr, RH, SP, x->a + frame); //get address into RH
+            Put2(op, RH, RH, x->b); //get value into RH from mem[RH+0]
 
             x->r = RH;
             incR();
@@ -691,12 +854,12 @@ void MakeItem(Item* x, Object y, int curlev)
 {
     x->mode = y->class;
     x->type = y->type;
-    
+
     x->a = y->val;
-    
+
     x->rdo = y->rdo;
-    
-    if( y->class == Par ) //parameter declared with VAR 
+
+    if( y->class == Par ) //parameter declared with VAR
     {
         x->b = 0;
     }
@@ -711,7 +874,7 @@ void MakeItem(Item* x, Object y, int curlev)
     }
     else
     {
-        x->r = y->lev;
+        x->r = y->lev; //lev denotes if a variable is local to procedure
     }
 
     if( (y->lev > 0) && (y->lev != curlev) && (y->class != Const) )

@@ -514,6 +514,7 @@ void Import(char *modid, char *modid1)
         R = fopen(fname, "rb"); //modulename.smb file opened
         if( R != 0 )
         {
+			printf("\n");
             fread(&(key), sizeof(int), 1, R);
             printf("\nimport_k=%d ", key);
             fread(&(key), sizeof(int), 1, R);
@@ -579,6 +580,8 @@ void Import(char *modid, char *modid1)
                 Read(R, &class);
                 printf("\nobj_class=%d ", class);
             }
+            printf("\n");
+
             fclose(R);
         }
         else
@@ -827,6 +830,7 @@ void Export(char* modid, int *newSF, int *key)
     {
         Mark("can't create temp symbol file");
     }
+    printf("\n");
     fwrite(&(k), sizeof(int), 1, R); //placeholder not used now
     printf("export_k=%d ", k);
     fwrite(&(k), sizeof(int), 1, R); //placeholder for key to be inserted at the end
@@ -907,6 +911,9 @@ void Export(char* modid, int *newSF, int *key)
         printf("0=%d ", 0);
     }
     while(file_length(R)%4 != 0);
+
+    printf("\n");
+
     //clean typtab[]
     for (Ref = Record+1; Ref <= MAXTYPTAB-1; Ref++)
     {
