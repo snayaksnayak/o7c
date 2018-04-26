@@ -464,7 +464,8 @@ void CheckRegs()
     }
 }
 
-//makes a Cond type Item
+//converts Item type to Cond
+//here n is processor condition code
 void SetCC(Item *x, int n)
 {
     x->mode = Cond;
@@ -481,7 +482,11 @@ void Trap(int cond, int num)
 
 //handling of forward reference, fixups of branch addresses and constant tables
 
-//MI becomes PL, EQ becomes NE
+//MI becomes PL
+//EQ becomes NE
+//LT becomes GE
+//LE becomes GT
+//and vice-versa
 int negated(int cond)
 {
     if( cond < 8 )
@@ -613,6 +618,8 @@ void NilCheck()
 
 //***************
 //converts Item mode to Reg
+//takes care of all Const (including Procedures) but not of string Const
+//takes care of Var, Par, RegI, Cond, but not of Fld, Typ
 void load(Item* x)
 {
     int op;
@@ -636,12 +643,12 @@ void load(Item* x)
                 {
                     Mark("not allowed");
                 }
-                else if( x->r == 0 )
+                else if( x->r == 0 ) //means this procedure is from this module
                 {
-                    Put3(BL, 7, 0); //L: goto pc+1+0, r15:=pc+1
-                    Put1a(Sub, RH, LNK, pc*4 - x->a); //L+1: rh:=r15-((L+1)*4 - x->a)
+                    Put3(BL, 7, 0); //basically it means go to next instruction while saving next instruction address in LNK register; L: r15:=pc + 1 word and goto pc+1+0; 1 means 1 word, 0 is for 0 word offset
+                    Put1a(Sub, RH, LNK, pc*4 - x->a); //basically it loads procedure address which is address of this instruction (which is just saved into LNK register by above instruction) minus offset found in x->a; L + 1 word: r0:=r15-((L+1)*4 - x->a); 
                 }
-                else //x->r is -ve
+                else //x->r is -ve; means this procedure is from some imported module
                 {
                     GetSB(x->r);
                     Put1(Add, RH, SB, x->a + 0x100); //mark as progbase-relative
@@ -688,16 +695,16 @@ void load(Item* x)
         }
         else if( x->mode == RegI )
         {
-            Put2(op, x->r, x->r, x->a);
+            Put2(op, x->r, x->r, x->a); //get value from mem[x->r + x->a] to x->r
         }
         else if( x->mode == Cond )
         {
-            Put3(BC, negated(x->r), 2);
-            FixLink(x->b);
-            Put1(Mov, RH, 0, 1);
-            Put3(BC, 7, 1);
-            FixLink(x->a);
-            Put1(Mov, RH, 0, 0);
+            Put3(BC, negated(x->r), 2); //if condition is false, jump to last Put1() instruction below. why?
+            FixLink(x->b); //x->b holds Fjump address
+            Put1(Mov, RH, 0, 1); //why RH:=R1?
+            Put3(BC, 7, 1); //jump past this below instruction
+            FixLink(x->a); //x->a holds Tjump address
+            Put1(Mov, RH, 0, 0); //why RH:=R0?
 
             x->r = RH;
             incR();
@@ -1702,6 +1709,9 @@ void IntRelation(int op, Item* x, Item* y)   // x := x < y
         Put0(Cmp, x->r, x->r, y->r);
         RH = RH - 2;
     }
+    //relmap[op-EQL] converts
+    //               op: EQL = 9, NEQ = 10, LSR = 11, LEQ = 12, GTR = 13, GEQ = 14
+    //to condition code: EQ = 1,  NE = 9,   LT = 5,   LE = 6,   GT = 14,  GE = 13
     SetCC(x, relmap[op - EQL]);
 }
 
@@ -1718,6 +1728,9 @@ void RealRelation(int op, Item* x, Item* y )   // x := x < y
         Put0(Fsb, x->r, x->r, y->r);
         RH = RH - 2;
     }
+    //relmap[op-EQL] converts
+    //               op: EQL = 9, NEQ = 10, LSR = 11, LEQ = 12, GTR = 13, GEQ = 14
+    //to condition code: EQ = 1,  NE = 9,   LT = 5,   LE = 6,   GT = 14,  GE = 13
     SetCC(x, relmap[op - EQL]);
 }
 
@@ -1751,6 +1764,9 @@ void StringRelation(int op, Item* x, Item* y)   // x := x < y
     Put1(Cmp, RH+2, RH, 0);
     Put3(BC, NE, -8);
     RH = RH - 2;
+    //relmap[op-EQL] converts
+    //               op: EQL = 9, NEQ = 10, LSR = 11, LEQ = 12, GTR = 13, GEQ = 14
+    //to condition code: EQ = 1,  NE = 9,   LT = 5,   LE = 6,   GT = 14,  GE = 13
     SetCC(x, relmap[op - EQL]);
 }
 
@@ -2635,12 +2651,10 @@ void Adr(Item* x)
 }
 //*********************
 
-//directly check input integer constant
-//with processor condition code
+//converts Item type to Cond when x->a holds processor condition code
 void Condition(Item* x)
 {
     //x->mode == Const
-    //x->type->form == Int
     SetCC(x, x->a);
 }
 

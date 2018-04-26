@@ -1433,11 +1433,15 @@ u=0 means branch to addr in Rc
 u=1 means branch to PC + 1 + off
 v=0 means link addr is NOT stored in R15
 v=1 means link addr PC + 1 is stored in R15
+[PC + 1 means PC + 1 word or PC + 4 bytes]
 
+if cond is true
 BR  = 0 = (u=0,v=0) = branch to addr in Rc, link addr is NOT stored in R15
 BLR = 1 = (u=0,v=1) = branch to addr in Rc, link addr PC + 1 is stored in R15
 BC  = 2 = (u=1,v=0) = branch to PC + 1 + off, link addr is NOT stored in R15
 BL  = 3 = (u=1,v=1) = branch to PC + 1 + off, link addr PC + 1 is stored in R15
+else
+go to PC + 1
 
 cond  mnemonic  meaning           evaluation
 ----  --------  -------           ----------
