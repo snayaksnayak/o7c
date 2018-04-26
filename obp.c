@@ -17,20 +17,18 @@
 
 #include "obc.h"
 
-//forward declaration
-typedef struct PtrBaseDesc PtrBaseDesc, *PtrBase;
-
 //list of names of pointer base types
-typedef struct PtrBaseDesc
+struct PtrBaseDesc
 {
     char name[ID_LEN];
     Type type;
-    PtrBase next;
-} PtrBaseDesc, *PtrBase;
+    struct PtrBaseDesc* next;
+};
+typedef struct PtrBaseDesc PtrBaseDesc, *PtrBase;
 
 int sym; //last symbol/token read, holds return value of scanner Get()
 int dc; //data counter; holds whole size of total variables declared in a module, which is finally assigned to varsize of OBG
-int level, exno, version;
+int level, exno;
 int newSF; //compiler option: create/overwrite new symbol file?
 
 char modid[ID_LEN]; //holds currentnly compiling module name
@@ -2727,12 +2725,12 @@ void _Module()
         Get(&sym); //we found the token MODULE, so do an Get()
         if( sym == MUL )
         {
-            version = 0;
+            riscver = 0;
             Get(&sym);
         }
         else //in newer version risc, we don't write MODULE* Abcd, we write MODULE Abcd
         {
-            version = 1;
+            riscver = 1;
         }
 
         InitSymbolTable(); //initialize symbol table
@@ -2798,7 +2796,7 @@ void _Module()
             Check(SEMICOLON, "no ;");
         }
 
-        Open(version); //initialize ORG
+        Open(riscver); //initialize ORG
 
         Declarations(&dc); //consumes DeclarationSequence except ProcedureDeclaration
 
@@ -2841,7 +2839,7 @@ void _Module()
 
 		//whole module is parsed,
 		//now proceed to create symbol file
-        if( (errcnt == 0) && (version != 0) )
+        if( (errcnt == 0) && (riscver != 0) )
         {
 			//create symbol file for compiled module
             Export(modid, &newSF, &key);

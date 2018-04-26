@@ -72,7 +72,7 @@ int WordSize = 4,
     LT = 5, GE = 13,
     LE = 6, GT = 14;
 
-int version;  //0 = RISC-0, 1 = RISC-5
+int riscver = 1;  //0 = RISC-0, 1 = RISC-5
 int entry;   //module entry point
 int RH;  //available registers R[0] ... R[H-1]
 int curSB;  //current static base in SB
@@ -596,10 +596,9 @@ int merged(int L0, int L1)
 
 // loading of operands and addresses into registers
 
-//base is a register number
 void GetSB(int base)
 {
-    if( (version != 0) && ((base != curSB) || (base != 0)) ) //why? ((base != curSB) || (base != 0))? for risc-5, this fails only when base = curSB and base = 0, i.e. base = curSB = 0. seems this case is unlikely to happen. so this condition will always pass!
+    if( (riscver != 0) && ((base != curSB) || (base != 0)) ) //why? ((base != curSB) || (base != 0))? for risc-5, this fails only when base = curSB and base = 0, i.e. base = curSB = 0. seems this case is unlikely to happen. so this condition will always pass!
     {
         Put2(Ldr, SB, -base, pc-fixorgD); //why? -base?
         fixorgD = pc-1; //why?
@@ -643,12 +642,12 @@ void load(Item* x)
                 {
                     Mark("not allowed");
                 }
-                else if( x->r == 0 ) //means this procedure is from this module
+                else if( x->r == 0 ) //x->r is 0 means we are calling a procedure of this module
                 {
                     Put3(BL, 7, 0); //basically it means go to next instruction while saving next instruction address in LNK register; L: r15:=pc + 1 word and goto pc+1+0; 1 means 1 word, 0 is for 0 word offset
                     Put1a(Sub, RH, LNK, pc*4 - x->a); //basically it loads procedure address which is address of this instruction (which is just saved into LNK register by above instruction) minus offset found in x->a; L + 1 word: r0:=r15-((L+1)*4 - x->a); 
                 }
-                else //x->r is -ve; means this procedure is from some imported module
+                else //x->r is -ve means we are calling a procedure of some imported module
                 {
                     GetSB(x->r);
                     Put1(Add, RH, SB, x->a + 0x100); //mark as progbase-relative
@@ -672,11 +671,11 @@ void load(Item* x)
         }
         else if( x->mode == Var )
         {
-            if( x->r > 0 ) //if it is a local variable to a procedure
+            if( x->r > 0 ) //x->r > 0 means it is a local variable to a procedure
             {
                 Put2(op, RH, SP, x->a + frame); //get value from mem[SP+offset]
             }
-            else //if not local
+            else //x->r = 0 means global variable of this module; x->r < 0 means exported variable of some imported module
             {
                 GetSB(x->r);
                 Put2(op, RH, SB, x->a); //get value from mem[SB+offset]
@@ -861,26 +860,30 @@ void MakeItem(Item* x, Object y, int curlev)
 {
     x->mode = y->class;
     x->type = y->type;
-
-    x->a = y->val;
-
     x->rdo = y->rdo;
 
     if( y->class == Par ) //parameter declared with VAR
     {
+		x->a = y->val;
         x->b = 0;
+        //x->r
     }
     else if( y->class == Typ )
     {
         x->a = y->type->len;
+        //x->b
         x->r = -y->lev;
     }
     else if( (y->class == Const) && (y->type->form == String) )
     {
+		x->a = y->val;
         x->b = y->lev; //lev abused for string length
+        //x->r
     }
     else
     {
+		//x->a
+		//x->b
         x->r = y->lev; //lev denotes if a variable is local to procedure
     }
 
@@ -1692,9 +1695,11 @@ void IntRelation(int op, Item* x, Item* y)   // x := x < y
     if( (y->mode == Const) && (y->type->form != Proc) )
     {
         load(x);
-        if( (y->a != 0) || !(op == EQL || op == NEQ) || ((code[pc-1] >> 30) != -2) )
+        if( (y->a != 0) //if value of y is non-zero
+        || !(op == EQL || op == NEQ) //or if y is 0 and some other operation
+        || ((code[pc-1] >> 30) != -2) ) //or if y is 0, op is EQ or NEQ and previous instruction is a format 2 instruction (load or store)
         {
-            Put1a(Cmp, x->r, x->r, y->a);
+            Put1a(Cmp, x->r, x->r, y->a); //x->r := x->r - y->a; Cmp = Sub
         }
         RH--;
     }
@@ -1706,13 +1711,13 @@ void IntRelation(int op, Item* x, Item* y)   // x := x < y
         }
         load(x);
         load(y);
-        Put0(Cmp, x->r, x->r, y->r);
+        Put0(Cmp, x->r, x->r, y->r); //x->r := x->r - y->r
         RH = RH - 2;
     }
     //relmap[op-EQL] converts
     //               op: EQL = 9, NEQ = 10, LSR = 11, LEQ = 12, GTR = 13, GEQ = 14
     //to condition code: EQ = 1,  NE = 9,   LT = 5,   LE = 6,   GT = 14,  GE = 13
-    SetCC(x, relmap[op - EQL]);
+    SetCC(x, relmap[op - EQL]); //convert Item type of x from Reg to Cond; for next branch instruction, this condition is used
 }
 
 void RealRelation(int op, Item* x, Item* y )   // x := x < y
@@ -1725,7 +1730,7 @@ void RealRelation(int op, Item* x, Item* y )   // x := x < y
     else
     {
         load(y);
-        Put0(Fsb, x->r, x->r, y->r);
+        Put0(Fsb, x->r, x->r, y->r); //x->r := x->r - y->r; floating subtract
         RH = RH - 2;
     }
     //relmap[op-EQL] converts
@@ -1759,10 +1764,10 @@ void StringRelation(int op, Item* x, Item* y)   // x := x < y
     Put1(Add, x->r, x->r, 1);
     Put2(Ldr+1, RH+1, y->r, 0); //load byte
     Put1(Add, y->r, y->r, 1);
-    Put0(Cmp, RH+2, RH, RH+1);
-    Put3(BC, NE, 2);
-    Put1(Cmp, RH+2, RH, 0);
-    Put3(BC, NE, -8);
+    Put0(Cmp, RH+2, RH, RH+1); //if characters are not equal
+    Put3(BC, NE, 2); //goto end leaving this loop
+    Put1(Cmp, RH+2, RH, 0); //if we have not encountered '\0' of x
+    Put3(BC, NE, -8); //goto top
     RH = RH - 2;
     //relmap[op-EQL] converts
     //               op: EQL = 9, NEQ = 10, LSR = 11, LEQ = 12, GTR = 13, GEQ = 14
@@ -1775,7 +1780,7 @@ void StringRelation(int op, Item* x, Item* y)   // x := x < y
 void StrToChar(Item* x )
 {
     x->type = charType;
-    strx = strx - 4;
+    strx = strx - 4; // since every string is stored in a 4 byte alighned space, one character string such as "P" also must have taken 4 byte space; this function is called immediately after we parse a single character string constant, so this -4 undo the copying of string to _str[]
     x->a = _str[x->a];
 }
 
@@ -2669,7 +2674,7 @@ void Open(int v)
     fixorgD = 0;
     fixorgT = 0;
     check = (v != 0); //check=1 for risc v=1, not for v=0
-    version = v;
+    riscver = v;
     if( v == 0 )
     {
         pc = 1;
@@ -2693,7 +2698,7 @@ void Header()
 {
     entry = pc*4; //for RISC-5, pc=0, entry=0
 
-    if( version == 0 ) //RISC-0
+    if( riscver == 0 ) //RISC-0
     {
         code[0] = 0x0E7000000-1 + pc;
         Put1a(Mov, SB, 0, VarOrg0);
@@ -2795,7 +2800,7 @@ void Close(char* modid, int key, int nofent)
     FILE* R;
 
     //exit code
-    if( version == 0 )
+    if( riscver == 0 )
     {
         Put1(Mov, 0, 0, 0);
         Put3(BR, 7, 0);//RISC-0
@@ -2850,7 +2855,7 @@ void Close(char* modid, int key, int nofent)
 	//write header
     WriteString(R, modid); //first write module name with '\0'
     WriteInt(R, key); //4byte for key
-    WriteByte(R, version); //1byte for version
+    WriteByte(R, riscver); //1byte for risc version
     WriteInt(R, size); //4byte for size
 
 	//write imported module names excluding SYSTEM

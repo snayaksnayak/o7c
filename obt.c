@@ -523,9 +523,9 @@ void Import(char *modid, char *modid1)
             printf("import_modname=%s ", modname);
             thismod = ThisModule(modid, modid1, TRUE, key); //create a module ObjDesc
             thismod->rdo = TRUE;
-            Read(R, &class); //version key
-            printf("import_versionkey=%d ", class);
-            if( class != versionkey )
+            Read(R, &class); //risc version
+            printf("import_riscver=%d ", class);
+            if( class != riscver )
             {
                 Mark("wrong version");
             }
@@ -836,9 +836,9 @@ void Export(char* modid, int *newSF, int *key)
     fwrite(&(k), sizeof(int), 1, R); //placeholder for key to be inserted at the end
     printf("export_key=%d ", k);
     WriteString(R, modid); //module name with '\0'
-    Write(R, versionkey); //1 byte version info
+    Write(R, riscver); //1 byte for risc version
     printf("export_modid=%s ", modid);
-    printf("export_versionkey=%d ", versionkey);
+    printf("export_riscver=%d ", riscver);
     obj = topScope->next; //go to first ObjDesc after Head ObjDesc
     while( obj != 0 )
     {

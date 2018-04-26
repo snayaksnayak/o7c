@@ -58,8 +58,6 @@ void WriteString(FILE *R, char *buf);
 
 //****interface to symbol table****
 
-extern int versionkey;
-
 //we associate each type of objects with a number
 //these constants represent types of objects
 extern int Head, Const, Var, Par, Fld, Typ,
@@ -221,6 +219,7 @@ typedef struct Item
 
 extern int WordSize;
 extern int pc;
+extern int riscver;
 
 int Here();
 void Abs(Item* x);
