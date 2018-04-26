@@ -596,11 +596,13 @@ int merged(int L0, int L1)
 
 // loading of operands and addresses into registers
 
+//base is a -ve number representing imported module
+//or 0 meaning this module
 void GetSB(int base)
 {
     if( (riscver != 0) && ((base != curSB) || (base != 0)) ) //why? ((base != curSB) || (base != 0))? for risc-5, this fails only when base = curSB and base = 0, i.e. base = curSB = 0. seems this case is unlikely to happen. so this condition will always pass!
     {
-        Put2(Ldr, SB, -base, pc-fixorgD); //why? -base?
+        Put2(Ldr, SB, -base, pc-fixorgD); //why? -base? because base is either 0 (means this module) or -ve (means some imported module)
         fixorgD = pc-1; //why?
         curSB = base;
     }
@@ -684,7 +686,7 @@ void load(Item* x)
             x->r = RH;
             incR();
         }
-        else if( x->mode == Par )
+        else if( x->mode == Par ) //parameter declared with VAR
         {
             Put2(Ldr, RH, SP, x->a + frame); //get address into RH
             Put2(op, RH, RH, x->b); //get value into RH from mem[RH+0]
@@ -717,24 +719,24 @@ void loadAdr(Item* x)
 {
     if( x->mode == Var )
     {
-        if( x->r > 0 )//local
+        if( x->r > 0 ) //if local variable of a procedure
         {
-            Put1a(Add, RH, SP, x->a + frame);
+            Put1a(Add, RH, SP, x->a + frame); //RH := SP + offset
         }
         else
         {
             GetSB(x->r);
-            Put1a(Add, RH, SB, x->a);
+            Put1a(Add, RH, SB, x->a); //RH := SB + offset
         }
         x->r = RH;
         incR();
     }
-    else if( x->mode == Par )
+    else if( x->mode == Par ) //parameter declared with VAR
     {
-        Put2(Ldr, RH, SP, x->a + frame);
-        if( x->b != 0 )
+        Put2(Ldr, RH, SP, x->a + frame); //get address into RH
+        if( x->b != 0 ) //why? for Par, what does x->b contain?
         {
-            Put1a(Add, RH, RH, x->b);
+            Put1a(Add, RH, RH, x->b); //RH := RH + x->b
         }
         x->r = RH;
         incR();
@@ -743,7 +745,7 @@ void loadAdr(Item* x)
     {
         if( x->a != 0 )
         {
-            Put1a(Add, x->r, x->r, x->a);
+            Put1a(Add, x->r, x->r, x->a); //x->r := x->r + x->a
         }
     }
     else
