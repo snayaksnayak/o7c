@@ -640,19 +640,19 @@ void load(Item* x)
         {
             if( x->type->form == Proc )
             {
-                if( x->r > 0 )
+                if( x->r > 0 ) //why? what it means?
                 {
                     Mark("not allowed");
                 }
                 else if( x->r == 0 ) //x->r is 0 means we are calling a procedure of this module
                 {
                     Put3(BL, 7, 0); //basically it means go to next instruction while saving next instruction address in LNK register; L: r15:=pc + 1 word and goto pc+1+0; 1 means 1 word, 0 is for 0 word offset
-                    Put1a(Sub, RH, LNK, pc*4 - x->a); //basically it loads procedure address which is address of this instruction (which is just saved into LNK register by above instruction) minus offset found in x->a; L + 1 word: r0:=r15-((L+1)*4 - x->a); 
+                    Put1a(Sub, RH, LNK, pc*4 - x->a); //basically it loads procedure address which is address of this instruction (which is just saved into LNK register by above instruction) minus offset found in x->a; L + 1 word: r0:=r15-((L+1)*4 - x->a);
                 }
                 else //x->r is -ve means we are calling a procedure of some imported module
                 {
                     GetSB(x->r);
-                    Put1(Add, RH, SB, x->a + 0x100); //mark as progbase-relative
+                    Put1(Add, RH, SB, x->a + 0x100); //relative to static base. why? 0x100?
                 }
             }
             else if( (x->a <= 0x0FFFF) && (x->a >= -0x10000) ) //16bit value
