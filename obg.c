@@ -761,16 +761,16 @@ void loadCond(Item* x)
     {
         if( x->mode == Const )
         {
-            x->r = 15 - x->a*8;
+            x->r = 15 - x->a*8; //x->r := 7 (true) or 15 (false)
         }
         else
         {
             load(x);
-            if( (code[pc-1] >> 30) != -2 )
+            if( (code[pc-1] >> 30) != -2 ) //if previous instruction is a format 2 (load or store) instruction
             {
-                Put1(Cmp, x->r, x->r, 0);
+                Put1(Cmp, x->r, x->r, 0); //x->r := x->r - 0
             }
-            x->r = NE;
+            x->r = NE; //not equal to zero
             RH--;
         }
         x->mode = Cond;
@@ -786,16 +786,16 @@ void loadCond(Item* x)
 void loadTypTagAdr(Type T)
 {
     Item x;
-    x.mode = Var;
-    x.a = T->len;
-    x.r = -T->mno;
+    x.mode = Var; //trick to execute a piece of code in loadAdr()
+    x.a = T->len; //len holds descriptor address for records
+    x.r = -T->mno; //mno holds positive value of imported module number; becomes negative here
     loadAdr(&x);
 }
 
 void loadStringAdr(Item* x)
 {
-    GetSB(0);
-    Put1a(Add, RH, SB, varsize+x->a);
+    GetSB(0); //for current module
+    Put1a(Add, RH, SB, varsize+x->a); //RH := SB + varsize+x->a
     x->mode = Reg;
     x->r = RH;
     incR();
