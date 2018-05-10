@@ -615,7 +615,7 @@ void NilCheck()
 {
     if( check )
     {
-        Trap(EQ, 4);
+        Trap(EQ, 4); //if Z bit is set
     }
 }
 
@@ -935,7 +935,7 @@ void Index(Item* x, Item* y) //x := x[y]
         {
             Mark("bad index");
         }
-        
+
         if( x->mode == Var || x->mode == RegI )
         {
             x->a = x->a + (y->a * s);
@@ -968,7 +968,7 @@ void Index(Item* x, Item* y) //x := x[y]
             }
             Trap(10, 1); //10 = CC cond code = if carry bit clear
         }
-        
+
         //if datatype size is 4
         if( s == 4 )
         {
@@ -978,7 +978,7 @@ void Index(Item* x, Item* y) //x := x[y]
         {
             Put1a(Mul, y->r, y->r, s); //multiply y value with datatype size
         }
-        
+
         if( x->mode == Var )
         {
             if( x->r > 0 ) //if x array is local to procedure
@@ -1014,20 +1014,21 @@ void Index(Item* x, Item* y) //x := x[y]
         }
         else if( x->mode == Par )
         {
-            Put2(Ldr, RH, SP, x->a + frame);
-            Put0(Add, y->r, RH, y->r);
+            Put2(Ldr, RH, SP, x->a + frame); //remember, if a parameter is declared as VAR, its address comes as parameter
+            Put0(Add, y->r, RH, y->r); //so add everything, y->r := Mem[SP + x->a] + y->r; obviously with 'frame' adjustment
             x->mode = RegI;
             x->r = y->r;
-            x->a = x->b;
+            x->a = x->b; //for RegI, x->a is added to get final address
         }
-        else if( x->mode == RegI )
+        else if( x->mode == RegI ) //if x ia already in RegI mode
         {
-            Put0(Add, x->r, x->r, y->r);
-            RH--;
+            Put0(Add, x->r, x->r, y->r); //make x->r := x->r + y->r
+            RH--; //free y->r
         }
     }
 }
 
+//get value, not address, of a variable
 void DeRef(Item* x)
 {
     if( x->mode == Var )
@@ -1041,7 +1042,7 @@ void DeRef(Item* x)
             GetSB(x->r);
             Put2(Ldr, RH, SB, x->a);
         }
-        NilCheck();
+        NilCheck(); //why? to check if addr is 0? check how Z bit is set for Ldr instruction
         x->r = RH;
         incR();
     }
