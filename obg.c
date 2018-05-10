@@ -474,10 +474,12 @@ void SetCC(Item *x, int n)
     x->r = n;
 }
 
-//Module Table address is at MT
+//Module Table address is at MT register
 void Trap(int cond, int num)
 {
     Put3(BLR, cond, pos()*0x100 + num*0x10 + MT);
+    //pos() value is left shifted 8 bits,
+    //num left shifted 4 bits
 }
 
 //handling of forward reference, fixups of branch addresses and constant tables
@@ -734,7 +736,7 @@ void loadAdr(Item* x)
     else if( x->mode == Par ) //parameter declared with VAR
     {
         Put2(Ldr, RH, SP, x->a + frame); //get address into RH
-        if( x->b != 0 ) //why? for Par, what does x->b contain?
+        if( x->b != 0 ) //why? for Par, what does x->b contain? it contains selector offset
         {
             Put1a(Add, RH, RH, x->b); //RH := RH + x->b
         }
@@ -884,7 +886,7 @@ void MakeItem(Item* x, Object y, int curlev)
     }
     else
     {
-		//x->a
+		x->a = y->val;
 		//x->b
         x->r = y->lev; //lev denotes if a variable is local to procedure
     }
@@ -901,9 +903,9 @@ void Field(Item* x, Object y) // x := x.y
 {
     if( x->mode == Var )
     {
-        if( x->r >= 0 )
+        if( x->r >= 0 ) //if local to procedure or global of current module
         {
-            x->a = x->a + y->val;
+            x->a = x->a + y->val; //offset of x + offset of ys
         }
         else
         {
@@ -918,44 +920,45 @@ void Field(Item* x, Object y) // x := x.y
     }
     else if( x->mode == Par )
     {
-        x->b = x->b + y->val;
+        x->b = x->b + y->val; //x->b holds selector offset
     }
 }
 
 void Index(Item* x, Item* y) //x := x[y]
 {
     int s, lim;
-    s = x->type->base->size;
-    lim = x->type->len;
-    if( (y->mode == Const) && (lim >= 0) )
+    s = x->type->base->size; //datatype size
+    lim = x->type->len; //array size
+    if( (y->mode == Const) && (lim >= 0) ) //if y is a constant
     {
-        if( (y->a < 0) || (y->a >= lim) )
+        if( (y->a < 0) || (y->a >= lim) ) //check boundary
         {
             Mark("bad index");
         }
+        
         if( x->mode == Var || x->mode == RegI )
         {
-            x->a = y->a * s + x->a;
+            x->a = x->a + (y->a * s);
         }
         else if( x->mode == Par )
         {
-            x->b = y->a * s + x->b;
+            x->b = x->b + (y->a * s); //x->b holds selector offset
         }
     }
-    else
+    else //if y is not a constant
     {
-        load(y);
-        if( check )//check array bounds
+        load(y); //bring y value in to a register
+        if( check )//if checking of array bounds allowed
         {
             if( lim >= 0 )
             {
-                Put1a(Cmp, RH, y->r, lim);
+                Put1a(Cmp, RH, y->r, lim); //compare y with array size
             }
             else //open array
             {
                 if( x->mode == Var || x->mode == Par )
                 {
-                    Put2(Ldr, RH, SP, x->a+4+frame);
+                    Put2(Ldr, RH, SP, x->a+4+frame); //x->a offset is for array parameter and (x->a)+4 ofset is for open array lenth
                     Put0(Cmp, RH, y->r, RH);
                 }
                 else
@@ -963,35 +966,47 @@ void Index(Item* x, Item* y) //x := x[y]
                     Mark("error in Index");
                 }
             }
-            Trap(10, 1); //BCC
+            Trap(10, 1); //10 = CC cond code = if carry bit clear
         }
+        
+        //if datatype size is 4
         if( s == 4 )
         {
-            Put1(Lsl, y->r, y->r, 2);
+            Put1(Lsl, y->r, y->r, 2); //left shift y value by 2 bits
         }
-        else if( s > 1 )
+        else if( s > 1 ) //if datatype size is not 4 but more than 1
         {
-            Put1a(Mul, y->r, y->r, s);
+            Put1a(Mul, y->r, y->r, s); //multiply y value with datatype size
         }
+        
         if( x->mode == Var )
         {
-            if( x->r > 0 )
+            if( x->r > 0 ) //if x array is local to procedure
             {
                 Put0(Add, y->r, SP, y->r);
                 x->a = x->a + frame;
+                //to point to y th element in array x,
+                //we have to add SP, x->a and y->r.
+                //but since we will change Item x's mode to RegI,
+                //we just add SP and y->r, which will become x->r below
+                //and we simply adjust x->a adding 'frame'
+                //remember that RegI means: addr = addr = Reg[r] + a
             }
             else
             {
                 GetSB(x->r);
-                if( x->r == 0 )
+                if( x->r == 0 ) //if array x is in current module
                 {
-                    Put0(Add, y->r, SB, y->r);
+                    Put0(Add, y->r, SB, y->r); //just add SB and y->r
+                    //leave x->a as is, since we will change mode to RegI
                 }
                 else
                 {
                     Put1a(Add, RH, SB, x->a);
                     Put0(Add, y->r, RH, y->r);
                     x->a = 0;
+                    //here, add everything, y->r := SB + x->a + y->r
+                    //make x->a := 0, else RegI will add x->a again!
                 }
             }
             x->r = y->r;
@@ -1904,7 +1919,7 @@ void CopyString(Item*x, Item* y)  //x := y
     }
     else if( check )
     {
-        Put2(Ldr, RH, SP, x->a+4);//open array len, frame = 0hk
+        Put2(Ldr, RH, SP, x->a+4);//open array len is hiddenly pushed to stack just after array parameter
         Put1(Cmp, RH, RH, y->b);
         Trap(LT, 3);
     }
@@ -2540,7 +2555,7 @@ void Len(Item* x)
     }
     else//open array
     {
-        Put2(Ldr, RH, SP, x->a + 4 + frame);
+        Put2(Ldr, RH, SP, x->a+4+frame);
         x->mode = Reg;
         x->r = RH;
         incR();

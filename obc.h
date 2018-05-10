@@ -181,21 +181,21 @@ typedef struct Item
 //Item modes and meaning of fields:
 //mode     type->form    r      a             b
 //----------------------------------------------------------
-//Const    Int           -      value         -               (immediate value)
+//Const    Int           -      value         -             
 //Const    Real          -      float value   -
 //Const    Char          -      ascii value   -
 //Const    NilTyp        -      0             -
 //Const    String        -      str addr      len(str+'\0')
 //Const    Bool          -      0/1           -
 //Const    Proc          -      -             (proc addr)
-//Var                    -      off           -               (direct addr)
-//Par                    -      off           0               (indirect addr)
+//Var                    base   off           -               (addr = Reg[r] + a)
+//Par                    base   off           0/selector off  (addr = Mem[Reg[r]+a] + b)
 //Fld                    -      off           -
 //Typ                    -      TypeDesc addr -
 //----------------------------------------------------------
 //Reg                    regno  -             -
-//RegI                   regno  off           -
-//Cond                   cond   Tjump         Fjump           (T=True, F=False)
+//RegI                   regno  off           -               (addr = Reg[r] + a)
+//Cond                   cond   Tjump         Fjump         
 
 //Note the similarity of the two types Item and Object.
 //Both describe objects, but whereas
