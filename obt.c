@@ -836,8 +836,8 @@ void Export(char* modid, int *newSF, int *key)
     fwrite(&(k), sizeof(int), 1, R); //placeholder for key to be inserted at the end
     printf("export_key=%d ", k);
     WriteString(R, modid); //module name with '\0'
-    Write(R, riscver); //1 byte for risc version
     printf("export_modid=%s ", modid);
+    Write(R, riscver); //1 byte for risc version
     printf("export_riscver=%d ", riscver);
     obj = topScope->next; //go to first ObjDesc after Head ObjDesc
     while( obj != 0 )

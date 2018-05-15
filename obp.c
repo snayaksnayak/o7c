@@ -823,7 +823,7 @@ void factor(Item *x)
     // | myproc(9,6) | FLOOR(3.4) | (6*7) | ~mybool (these are factor)
     // | mymodule.myvar[i] | array[rowindex, columnindex] (these are designator, so factor)
     // | recordpointer^.element (equals to recordpointer.element) (this is designator, so factor)
-    // | p(Circle).radius (here p is of type Figure) (this is designator, so factor)
+    // | p(Circle).radius (where p is of type Figure) (this is designator, so factor)
     if( sym == IDENT )
     {
         qualident(&obj);

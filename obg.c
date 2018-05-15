@@ -1028,7 +1028,9 @@ void Index(Item* x, Item* y) //x := x[y]
     }
 }
 
-//get value, not address, of a variable
+//x is a pointer variable
+//here we get pointer's value from pointer's address
+//remember pointer value is an address of some other variable
 void DeRef(Item* x)
 {
     if( x->mode == Var )
@@ -1042,7 +1044,7 @@ void DeRef(Item* x)
             GetSB(x->r);
             Put2(Ldr, RH, SB, x->a);
         }
-        NilCheck(); //why? to check if addr is 0? check how Z bit is set for Ldr instruction
+        NilCheck();
         x->r = RH;
         incR();
     }
@@ -1074,7 +1076,7 @@ void Q(Type T, int *dcw)
     //one entry of type descriptor extension table
     if( T->base != 0 )
     {
-        Q(T->base, dcw);
+        Q(T->base, dcw); //recursively add its base type prior to the type itself
         data[*dcw] = (T->mno*0x1000 + T->len) * 0x1000 + *dcw - fixorgT;
         fixorgT = *dcw;
         (*dcw)++;
@@ -1166,6 +1168,8 @@ void BuildTD(Type T, int* dc)
     }
 }
 
+//this generates code for
+//p(Circle).radius (where p is of type Figure)
 void _TypeTest(Item* x, Type T, int varpar, int isguard)
 {
     int pc0;
@@ -1179,7 +1183,7 @@ void _TypeTest(Item* x, Type T, int varpar, int isguard)
     {
         load(x);
         pc0 = pc;
-        Put3(BC, EQ, 0); //NIL belongs to every pointer type
+        Put3(BC, EQ, 0);
         Put2(Ldr, RH, x->r, -8);
     }
     Put2(Ldr, RH, RH, T->nofpar*4);
@@ -1219,6 +1223,7 @@ void Not(Item* x)   //x := ~x
         loadCond(x);
     }
     x->r = negated(x->r);
+    //swap Tjump and Fjump
     t = x->a;
     x->a = x->b;
     x->b = t;
@@ -1291,7 +1296,7 @@ void Neg(Item* x)   // x := -x
     {
         if( x->mode == Const )
         {
-            x->a = x->a + 0x7FFFFFFF + 1;
+            x->a = x->a + 0x7FFFFFFF + 1; //why?
         }
         else
         {
@@ -1304,12 +1309,12 @@ void Neg(Item* x)   // x := -x
     {
         if( x->mode == Const )
         {
-            x->a = -x->a-1;
+            x->a = -x->a-1; //why?
         }
         else
         {
             load(x);
-            Put1(Xor, x->r, x->r, -1);
+            Put1(Xor, x->r, x->r, -1); //why?
         }
     }
 }
@@ -2903,7 +2908,7 @@ void Close(char* modid, int key, int nofent)
     }
 
 	//4byte for data size
-    WriteInt(R, varsize - tdx*4); //varsize includes type descriptors
+    WriteInt(R, varsize - tdx*4); //varsize includes type descriptors, so substract it
 
 	//4byte to write length of all string constants contained in ORG _str[]
     WriteInt(R, strx);
@@ -2942,16 +2947,17 @@ void Close(char* modid, int key, int nofent)
 	//4byte for number of entry points
     WriteInt(R, nofent);
 
-	//4byte for entry
-    WriteInt(R, entry);
+	//4byte for 1st entry
+    WriteInt(R, entry); //why? is it included in nofent?
 
-	//entries
+	//then other entries
     obj = topScope->next;
     while( obj != 0 )
     {
         if( obj->exno != 0 )
         {
-            if( ((obj->class == Const) && (obj->type->form == Proc)) || (obj->class == Var) )
+            if( ((obj->class == Const) && (obj->type->form == Proc))
+              || (obj->class == Var) )
             {
                 WriteInt(R, obj->val);
             }

@@ -181,7 +181,7 @@ typedef struct Item
 //Item modes and meaning of fields:
 //mode     type->form    r      a             b
 //----------------------------------------------------------
-//Const    Int           -      value         -             
+//Const    Int           -      value         -
 //Const    Real          -      float value   -
 //Const    Char          -      ascii value   -
 //Const    NilTyp        -      0             -
@@ -195,7 +195,7 @@ typedef struct Item
 //----------------------------------------------------------
 //Reg                    regno  -             -
 //RegI                   regno  off           -               (addr = Reg[r] + a)
-//Cond                   cond   Tjump         Fjump         
+//Cond                   cond   Tjump         Fjump
 
 //Note the similarity of the two types Item and Object.
 //Both describe objects, but whereas
@@ -336,22 +336,41 @@ void print_put3_asm(int pc, int op, int cond, int off);
 
 //Symbol file syntax:
 //-------------------
-//SymFile = null key name versionkey {object}.
+//SymFile = null key name riscver {object}.
 //object = (CON name type (value | exno) //exno is for procedures!
 //        | TYP name type [{fix} 0]
 //        | VAR name type exno).
 //type =      -ref | ref (PTR basetype
 //                      | ARR basetype len size
-//                      | PRO basetype {param} 0).
-//                      | REC basetype exno nofpar size {field} 0
+//                      | PRO basetype {param} 0
+//                      | REC basetype exno nofpar size {field} 0).
 //param =                              (VAR | PAR) rdo type.
 //field =                                                FLD name type offset.
 //basetype = type
 //-------------------
 
+//Object file syntax:
+//-------------------
+//ObjFile = name key riscver size
+//          imports typedesc
+//          varsize
+//          strings code commands entries ptrrefs
+//          fixP fixD fixT body "O".
+//imports = {modname key} 0.
+//typedesc = nof {byte}.
+//strings = nof {char}.
+//code = nof {word}.
+//commands = {comname offset} 0.
+//entries = nof {word}.
+//ptrrefs = {word} -1.
 
-//Meaning of addressing modes:
-//----------------------------
+//'fixP', 'fixD', 'fixT' are the origins of chains of instructions to be fixed up.
+//'body' is the offset to entry point of the module body.
+//-------------------
+
+
+//Generl Meaning of addressing modes:
+//-----------------------------------
 //Immediate: here is the value itself
 //Direct: value is at this address
 //Register: value is in this register
@@ -1169,7 +1188,7 @@ ScaleFactor-b ::= digit ScaleFactor-b
 #              RETURN '|'
 
 //selector = '.' ident | '[' ExpList ']' | '^' | '(' qualident ')'
-		//ex. record.element | array[rowindex, columnindex] | recordpointer^.element (equals to recordpointer.element) | p(Circle).radius (here p is of type Figure)
+		//ex. record.element | array[rowindex, columnindex] | recordpointer^.element (equals to recordpointer.element) | p(Circle).radius (where p is of type Figure)
 selector ::= '.' ident
           |  '[' ExpList ']'
           |  '^'
